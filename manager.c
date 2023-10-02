@@ -29,7 +29,6 @@ struct file_node **create_directory_contents(char **directories, int num_directo
             exit(EXIT_FAILURE);
         }
         while ((entry = readdir(dir)) != NULL) {
-            // Check if the entry has a period before it (hidden file) and should only be included if the all flag is set
             char *filename = entry->d_name;
             if (strcmp(filename, ".") == 0 || strcmp(filename, "..") == 0) {
                 continue;
@@ -38,29 +37,29 @@ struct file_node **create_directory_contents(char **directories, int num_directo
                 VERBOSE_PRINT("Skipping hidden file \"%s\"\n", filename);
                 continue;
             }
-            // Ensure the entry doesn't satisfy the ignore patterns
-            if (flags->ignore1 != NULL && check_patterns(flags->ignore1, filename)) {
-                VERBOSE_PRINT("Skipping file \"%s\" as it matches an ignore pattern\n", filename);
-                continue;
-            }
-            // Ensure the entry satisfies the only patterns
-            if (flags->only1 != NULL && !check_patterns(flags->only1, filename)) {
-                VERBOSE_PRINT("Skipping file \"%s\" as it does not match an only pattern\n", filename);
-                continue;
-            }
-            
             char *filepath = malloc_data(strlen(directories[i]) + strlen(filename) + 2);
             sprintf(filepath, "%s/%s", directories[i], filename);
             if (stat(filepath, &file_info) == -1) {
                 fprintf(stderr, "Error: could not get file info for file \"%s\"\n", filepath);
                 exit(EXIT_FAILURE);
             }
-            
-            // Check if the file is a directory and should only be included if the recursive flag is set
-            if (S_ISDIR(file_info.st_mode) && !flags->recursive_flag) {
-                VERBOSE_PRINT("Skipping directory %s\n", filename);
-                continue;
-            }
+            if (S_ISDIR(file_info.st_mode)) {
+                if (!flags->recursive_flag) {
+                    VERBOSE_PRINT("Skipping directory %s\n", filename);
+                    continue;
+                }
+            } else {
+                // Ensure the entry doesn't satisfy the ignore patterns
+                if (flags->ignore1 != NULL && check_patterns(flags->ignore1, filename)) {
+                    VERBOSE_PRINT("Skipping file \"%s\" as it matches an ignore pattern\n", filename);
+                    continue;
+                }
+                // Ensure the entry satisfies the only patterns
+                if (flags->only1 != NULL && !check_patterns(flags->only1, filename)) {
+                    VERBOSE_PRINT("Skipping file \"%s\" as it does not match an only pattern\n", filename);
+                    continue;
+                }
+            } 
             struct file *new_file = malloc_data(sizeof(struct file));
             new_file->name = strdup(filename);
             if (S_ISDIR(file_info.st_mode)) {
