@@ -29,9 +29,9 @@ int find_master(struct file **master_file, int dir_index, struct file_node ***di
 }
 
 void copy_file(FILE *src, long long int size, char *destination, struct flags *flags) {
+    fseek(src, 0, SEEK_SET);
     FILE *dest = fopen(destination, "wb");
     if (dest == NULL) {
-        fclose(src);
         fprintf(stderr, "Error: could not open file %s\n", destination);
         exit(EXIT_FAILURE);
     }

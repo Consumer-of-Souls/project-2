@@ -16,6 +16,10 @@ struct file_node **create_directory_contents(char **directories, int num_directo
         while ((entry = readdir(dir)) != NULL) {
             // Check if the entry has a period before it (hidden file) and should only be included if the all flag is set
             char *filename = entry->d_name;
+            if (strcmp(filename, ".") == 0 || strcmp(filename, "..") == 0) {
+                VERBOSE_PRINT("Skipping fake directory %s\n", filename);
+                continue;
+            }
             if (filename[0] == '.' && !flags->all_flag) {
                 VERBOSE_PRINT("Skipping hidden file %s\n", filename);
                 continue;
