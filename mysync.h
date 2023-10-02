@@ -54,4 +54,26 @@ struct flags {
 
 char *glob2regex(char *);
 
+int find_master(struct file **, int, struct file_node ***, int, int);
+
+void copy_file(FILE *, long long int, char *, struct flags *);
+
+void sync_master(struct file *, int, char **, int, struct flags *);
+
+void enqueue_pattern(struct pattern **, char *);
+
+int check_patterns(struct pattern *, char *);
+
+void *malloc_data(size_t);
+
+struct file_node **create_directory_contents(char **, int, struct flags *);
+
+void sync_directories(char **, int, struct flags *);
+
+void print_directories(struct file_node **, char **, int);
+
+void create_directory(char *, char *, struct flags *);
+
+void placeholder_dirs(char *, int, char **, struct file_node ***, int, struct flags *);
+
 #endif
