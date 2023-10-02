@@ -58,6 +58,7 @@ void sync_master(struct file *master, int master_index, char **directories, int 
             char *filepath = malloc_data(strlen(directories[i]) + strlen(filename) + 2);
             sprintf(filepath, "%s/%s", directories[i], filename);
             copy_file(master_file, master->size, filepath, flags);
+            VERBOSE_PRINT("Copied master file %s to %s\n", master_path, filepath);
             free(filepath);
         }
     }

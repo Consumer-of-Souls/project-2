@@ -10,7 +10,7 @@ void create_directory(char *dir_name, char *parent_dir, struct flags *flags) {
         exit(EXIT_FAILURE);
     }
     if (flags->verbose_flag) {
-        printf("Created directory %s\n", dirpath);
+        VERBOSE_PRINT("Created directory %s as it did not exist\n", dirpath);
     }
     free(dirpath);
 }

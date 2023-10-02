@@ -8,6 +8,7 @@
 // 4. Return to step 2 until the directory array is empty (all files have been synced)
 
 // Clarification: if in different directories there are files with the same name, but different types (one is a directory, one is a file), what should happen? Are they skipped, or would one overwrite the other?
+// Clarification: Will files still be overwritten if they contain the same contents as the master file?
 
 int main(int argc, char **argv) {
     struct flags *flags = malloc_data(sizeof(struct flags));

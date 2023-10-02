@@ -52,6 +52,14 @@ struct flags {
     int verbose_flag;
 };
 
+
+#define VERBOSE_PRINT(fmt, ...) \
+    do { \
+        if (flags->verbose_flag) { \
+            printf(fmt, ##__VA_ARGS__); \
+        } \
+    } while (0)
+
 char *glob2regex(char *);
 
 int find_master(struct file **, int, struct file_node ***, int, int);
