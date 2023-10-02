@@ -62,7 +62,7 @@ struct flags {
 
 char *glob2regex(char *);
 
-int find_master(struct file **, int, struct file_node ***, int, int);
+int find_master(struct file **, int, struct file_node ***, int);
 
 void copy_file(FILE *, long long int, char *, struct flags *);
 
@@ -83,5 +83,7 @@ void print_directories(struct file_node **, char **, int);
 void create_directory(char *, char *, struct flags *);
 
 void placeholder_dirs(char *, int, char **, struct file_node ***, int, struct flags *);
+
+int check_directories(char **, int, struct flags *);
 
 #endif

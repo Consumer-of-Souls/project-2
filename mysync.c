@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
     flags->verbose_flag = 0;
     opterr = 0;
     int opt;
-    while ((opt = getopt(argc, argv, "ainoprv")) != -1) {
+    while ((opt = getopt(argc, argv, "ai:no:prv")) != -1) {
         switch (opt) {
             case 'a':
                 flags->all_flag = 1;
@@ -31,6 +31,7 @@ int main(int argc, char **argv) {
                 break;
             case 'n':
                 flags->no_sync_flag = 1;
+                flags->verbose_flag = 1;
                 break;
             case 'o':
                 enqueue_pattern(&(flags->only1), optarg);
@@ -59,6 +60,10 @@ int main(int argc, char **argv) {
     char **directories = malloc_data((num_directories) * sizeof(char *));
     for (int i = optind; i < argc; i++) {
         directories[i - optind] = strdup(argv[i]);
+    }
+    if (!check_directories(directories, num_directories, flags)) {
+        fprintf(stderr, "Error: invalid directories specified\n");
+        return 1;
     }
     sync_directories(directories, num_directories, flags);
     return 0;

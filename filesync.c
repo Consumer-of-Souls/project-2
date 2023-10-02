@@ -1,6 +1,6 @@
 #include "mysync.h"
 
-int find_master(struct file **master_file, int dir_index, struct file_node ***directory_contents, int num_directories, int verbose_flag) {
+int find_master(struct file **master_file, int dir_index, struct file_node ***directory_contents, int num_directories) {
     // A function that takes a file and an array of directory contents and returns the index of the newest version of the file
     int master_index = dir_index;
     for (int i = dir_index + 1; i < num_directories; i++) {
@@ -35,7 +35,7 @@ void copy_file(FILE *src, long long int size, char *destination, struct flags *f
         fprintf(stderr, "Error: could not open file %s\n", destination);
         exit(EXIT_FAILURE);
     }
-    long int page_size = sysconf(_SC_PAGESIZE);
+    int page_size = sysconf(_SC_PAGESIZE);
     size_t buffer_size = size < page_size * 16 ? size : page_size * 16;
     char *buffer = malloc_data(buffer_size);
     size_t bytes_read;
@@ -51,17 +51,24 @@ void sync_master(struct file *master, int master_index, char **directories, int 
     char *filename = master->name;
     char *master_path = malloc_data(strlen(directories[master_index]) + strlen(filename) + 2);
     sprintf(master_path, "%s/%s", directories[master_index], filename);
-    FILE *master_file = fopen(master_path, "rb");
+    FILE *master_file;
+    if (!flags->no_sync_flag) {
+        master_file = fopen(master_path, "rb");
+    }
     for (int i = 0; i < num_directories; i++) {
         if (i != master_index) {
             // If the directory is not the master directory, overwrite the file in the directory with the master file
             char *filepath = malloc_data(strlen(directories[i]) + strlen(filename) + 2);
             sprintf(filepath, "%s/%s", directories[i], filename);
-            copy_file(master_file, master->size, filepath, flags);
+            if (!flags->no_sync_flag) {
+                copy_file(master_file, master->size, filepath, flags);
+            }
             VERBOSE_PRINT("Copied master file %s to %s\n", master_path, filepath);
             free(filepath);
         }
     }
     free(master_path);
-    fclose(master_file);
+    if (!flags->no_sync_flag) {
+        fclose(master_file);
+    }
 }

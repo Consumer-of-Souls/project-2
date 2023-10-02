@@ -1,12 +1,28 @@
 #include "mysync.h"
 
+int check_directories(char **directories, int num_directories, struct flags *flags) {
+    // A function that takes an array of directory names, and returns 1 if all the directories exist, and 0 otherwise
+    for (int i = 0; i < num_directories; i++) {
+        if (access(directories[i], F_OK) == -1) {
+            VERBOSE_PRINT("Directory %s does not exist\n", directories[i]);
+            return 0;
+        }
+    }
+    VERBOSE_PRINT("All directories exist\n");
+    return 1;
+}
+
 struct file_node **create_directory_contents(char **directories, int num_directories, struct flags *flags) {
     struct file_node **directory_contents = malloc_data(num_directories * sizeof(struct file_node *));
     DIR *dir;
     struct dirent *entry;
     struct stat file_info;
     for (int i = 0; i < num_directories; i++) {
-        VERBOSE_PRINT("Reading directory %s\n", directories[i]);
+        VERBOSE_PRINT("Reading directory %s:\n", directories[i]);
+        if (flags->no_sync_flag && access(directories[i], F_OK) == -1) {
+            directory_contents[i] = NULL;
+            continue;
+        }
         dir = opendir(directories[i]);
         if (dir == NULL) {
             fprintf(stderr, "Error: could not open directory %s\n", directories[i]);
@@ -17,7 +33,6 @@ struct file_node **create_directory_contents(char **directories, int num_directo
             // Check if the entry has a period before it (hidden file) and should only be included if the all flag is set
             char *filename = entry->d_name;
             if (strcmp(filename, ".") == 0 || strcmp(filename, "..") == 0) {
-                VERBOSE_PRINT("Skipping fake directory %s\n", filename);
                 continue;
             }
             if (filename[0] == '.' && !flags->all_flag) {
@@ -51,10 +66,10 @@ struct file_node **create_directory_contents(char **directories, int num_directo
             new_file->name = strdup(filename);
             if (S_ISDIR(file_info.st_mode)) {
                 new_file->type = "directory";
-                VERBOSE_PRINT("Added subdirectory %s to directory %s\n", filename, directories[i]);
+                VERBOSE_PRINT("Added subdirectory %s to directory %s contents\n", filename, directories[i]);
             } else {
                 new_file->type = "file";
-                VERBOSE_PRINT("Added file %s to directory %s\n", filename, directories[i]);
+                VERBOSE_PRINT("Added file %s to directory %s contents\n", filename, directories[i]);
             }
             new_file->permissions = file_info.st_mode;
             new_file->edit_time = file_info.st_mtime;
@@ -89,7 +104,7 @@ void sync_directories(char **directories, int num_directories, struct flags *fla
                 sync_directories(subdirectories, num_directories, flags);
             } else {
                 VERBOSE_PRINT("Syncing file %s\n", master_file->name);
-                int master_index = find_master(&master_file, i, &directory_contents, num_directories, flags->verbose_flag);
+                int master_index = find_master(&master_file, i, &directory_contents, num_directories);
                 VERBOSE_PRINT("Master file for %s is in directory %s\n", master_file->name, directories[master_index]);
                 sync_master(master_file, master_index, directories, num_directories, flags);
             }

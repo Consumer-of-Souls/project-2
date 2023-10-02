@@ -4,14 +4,14 @@ void create_directory(char *dir_name, char *parent_dir, struct flags *flags) {
     // A function that takes a directory name and a parent directory name, and creates the directory in the parent directory
     char *dirpath = malloc_data(strlen(parent_dir) + strlen(dir_name) + 2);
     sprintf(dirpath, "%s/%s", parent_dir, dir_name);
-    int result = mkdir(dirpath, 0777);
-    if (result == -1) {
-        fprintf(stderr, "Error: could not create directory %s\n", dirpath);
-        exit(EXIT_FAILURE);
+    if (!flags->no_sync_flag) {
+        int result = mkdir(dirpath, 0777);
+        if (result == -1) {
+            fprintf(stderr, "Error: could not create directory %s\n", dirpath);
+            exit(EXIT_FAILURE);
+        }
     }
-    if (flags->verbose_flag) {
-        VERBOSE_PRINT("Created directory %s as it did not exist\n", dirpath);
-    }
+    VERBOSE_PRINT("Created directory %s as it did not exist\n", dirpath);
     free(dirpath);
 }
 
