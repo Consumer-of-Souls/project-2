@@ -28,22 +28,34 @@ int find_master(struct file **master_file, int dir_index, struct file_node ***di
     return master_index;
 }
 
-void copy_file(FILE *src, long long int size, char *destination, struct flags *flags) {
-    fseek(src, 0, SEEK_SET);
-    FILE *dest = fopen(destination, "wb");
-    if (dest == NULL) {
-        fprintf(stderr, "Error: could not open file %s\n", destination);
-        exit(EXIT_FAILURE);
+void copy_files(char *master_path, long long int master_size, char **filepaths, int num_directories, struct flags *flags) {
+    if (!flags->no_sync_flag) {
+        FILE *master_file = fopen(master_path, "rb");
+        if (master_file == NULL) {
+            fprintf(stderr, "Error: could not open file %s\n", master_path);
+            exit(EXIT_FAILURE);
+        }
+        FILE **files = malloc_data(num_directories * sizeof(FILE *));
+        for (int i = 0; i < num_directories; i++) {
+            files[i] = fopen(filepaths[i], "wb");
+            if (files[i] == NULL) {
+                fprintf(stderr, "Error: could not open file %s\n", filepaths[i]);
+                exit(EXIT_FAILURE);
+            }
+        }
+        int page_size = sysconf(_SC_PAGESIZE);
+        size_t buffer_size = master_size < page_size * 16 ? master_size : page_size * 16;
+        char *buffer = malloc_data(buffer_size);
+        size_t bytes_read;
+        while ((bytes_read = fread(buffer, 1, buffer_size, master_file)) > 0) {
+            for (int i = 0; i < num_directories; i++) {
+                fwrite(buffer, 1, bytes_read, files[i]);
+            }
+        }
     }
-    int page_size = sysconf(_SC_PAGESIZE);
-    size_t buffer_size = size < page_size * 16 ? size : page_size * 16;
-    char *buffer = malloc_data(buffer_size);
-    size_t bytes_read;
-    while ((bytes_read = fread(buffer, 1, buffer_size, src)) > 0) {
-        fwrite(buffer, 1, bytes_read, dest);
+    for (int i=0; i<num_directories; i++) {
+        VERBOSE_PRINT("Copied master file \"%s\" to file \"%s\"\n", master_path, filepaths[i]);
     }
-    fclose(dest);
-    free(buffer);
 }
 
 void sync_master(struct file *master, int master_index, char **directories, int num_directories, struct flags *flags) {
@@ -51,38 +63,42 @@ void sync_master(struct file *master, int master_index, char **directories, int 
     char *filename = master->name;
     char *master_path = malloc_data(strlen(directories[master_index]) + strlen(filename) + 2);
     sprintf(master_path, "%s/%s", directories[master_index], filename);
-    FILE *master_file;
-    if (!flags->no_sync_flag) {
-        master_file = fopen(master_path, "rb");
+    char **filepaths = malloc_data((num_directories-1) * sizeof(char *));
+    int passed_master = 0;
+    for (int i=0; i<num_directories; i++) {
+        if (i == master_index) {
+            passed_master = 1;
+            continue;
+        }
+        filepaths[i - passed_master] = malloc_data(strlen(directories[i]) + strlen(filename) + 2);
+        sprintf(filepaths[i - passed_master], "%s/%s", directories[i], filename);
     }
-    if (flags->copy_perm_time_flag && flags->verbose_flag) {
-        char *mode_string = permissions(master->permissions);
-        VERBOSE_PRINT("Master file %s has permissions %s and modification time %lld\n", master_path, mode_string, master->edit_time);
-    }
-    for (int i = 0; i < num_directories; i++) {
-        if (i != master_index) {
-            // If the directory is not the master directory, overwrite the file in the directory with the master file
-            char *filepath = malloc_data(strlen(directories[i]) + strlen(filename) + 2);
-            sprintf(filepath, "%s/%s", directories[i], filename);
+    free(filename);
+    copy_files(master_path, master->size, filepaths, num_directories-1, flags);
+    if (flags->copy_perm_time_flag) {
+        char *readable_permissions;
+        if (flags->verbose_flag) {
+            readable_permissions = permissions(master->permissions);
+        }
+        struct utimbuf times;
+        times.actime = master->edit_time;
+        times.modtime = master->edit_time;
+        VERBOSE_PRINT("Master file \"%s\" has permissions %s and modification time %lld\n", master_path, readable_permissions, master->edit_time);
+        for (int i=0; i<num_directories-1; i++) {
             if (!flags->no_sync_flag) {
-                copy_file(master_file, master->size, filepath, flags);
-            }
-            VERBOSE_PRINT("Copied master file %s to %s\n", master_path, filepath);
-            if (flags->copy_perm_time_flag) {
-                struct utimbuf times;
-                times.actime = master->edit_time;
-                times.modtime = master->edit_time;
-                if (!flags->no_sync_flag) {
-                    utime(filepath, &times);
-                    chmod(filepath, master->permissions);
+                if (utime(filepaths[i], &times) == -1) {
+                    fprintf(stderr, "Error: could not set modification time for file \"%s\"\n", filepaths[i]);
+                    exit(EXIT_FAILURE);
                 }
-                VERBOSE_PRINT("Copied permissions and time from %s to %s\n", master_path, filepath);
+                if (chmod(filepaths[i], master->permissions) == -1) {
+                    fprintf(stderr, "Error: could not set permissions for file \"%s\"\n", filepaths[i]);
+                    exit(EXIT_FAILURE);
+                }
             }
-            free(filepath);
+            VERBOSE_PRINT("Set permissions for file \"%s\" to those of master file \"%s\"\n", filepaths[i], master_path);
+            free(filepaths[i]);
         }
     }
     free(master_path);
-    if (!flags->no_sync_flag) {
-        fclose(master_file);
-    }
+    free(filepaths);
 }

@@ -66,5 +66,6 @@ int main(int argc, char **argv) {
         return 1;
     }
     sync_directories(directories, num_directories, flags);
+    VERBOSE_PRINT("All files and subdirectories synced\n");
     return 0;
 }

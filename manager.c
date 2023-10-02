@@ -18,9 +18,9 @@ struct file_node **create_directory_contents(char **directories, int num_directo
     struct dirent *entry;
     struct stat file_info;
     for (int i = 0; i < num_directories; i++) {
-        VERBOSE_PRINT("Reading directory %s:\n", directories[i]);
+        directory_contents[i] = NULL;
+        VERBOSE_PRINT("Reading directory %s\n", directories[i]);
         if (flags->no_sync_flag && access(directories[i], F_OK) == -1) {
-            directory_contents[i] = NULL;
             continue;
         }
         dir = opendir(directories[i]);
@@ -28,7 +28,6 @@ struct file_node **create_directory_contents(char **directories, int num_directo
             fprintf(stderr, "Error: could not open directory %s\n", directories[i]);
             exit(EXIT_FAILURE);
         }
-        directory_contents[i] = NULL;
         while ((entry = readdir(dir)) != NULL) {
             // Check if the entry has a period before it (hidden file) and should only be included if the all flag is set
             char *filename = entry->d_name;
@@ -36,24 +35,24 @@ struct file_node **create_directory_contents(char **directories, int num_directo
                 continue;
             }
             if (filename[0] == '.' && !flags->all_flag) {
-                VERBOSE_PRINT("Skipping hidden file %s\n", filename);
+                VERBOSE_PRINT("Skipping hidden file \"%s\"\n", filename);
                 continue;
             }
             // Ensure the entry doesn't satisfy the ignore patterns
             if (flags->ignore1 != NULL && check_patterns(flags->ignore1, filename)) {
-                VERBOSE_PRINT("Skipping file %s as it matches an ignore pattern\n", filename);
+                VERBOSE_PRINT("Skipping file \"%s\" as it matches an ignore pattern\n", filename);
                 continue;
             }
             // Ensure the entry satisfies the only patterns
             if (flags->only1 != NULL && !check_patterns(flags->only1, filename)) {
-                VERBOSE_PRINT("Skipping file %s as it does not match an only pattern\n", filename);
+                VERBOSE_PRINT("Skipping file \"%s\" as it does not match an only pattern\n", filename);
                 continue;
             }
             
             char *filepath = malloc_data(strlen(directories[i]) + strlen(filename) + 2);
             sprintf(filepath, "%s/%s", directories[i], filename);
             if (stat(filepath, &file_info) == -1) {
-                fprintf(stderr, "Error: could not get file info for file %s\n", filepath);
+                fprintf(stderr, "Error: could not get file info for file \"%s\"\n", filepath);
                 exit(EXIT_FAILURE);
             }
             
@@ -69,7 +68,7 @@ struct file_node **create_directory_contents(char **directories, int num_directo
                 VERBOSE_PRINT("Added subdirectory %s to directory %s contents\n", filename, directories[i]);
             } else {
                 new_file->type = "file";
-                VERBOSE_PRINT("Added file %s to directory %s contents\n", filename, directories[i]);
+                VERBOSE_PRINT("Added file \"%s\" to directory %s contents\n", filename, directories[i]);
             }
             new_file->permissions = file_info.st_mode;
             new_file->edit_time = file_info.st_mtime;
@@ -103,12 +102,13 @@ void sync_directories(char **directories, int num_directories, struct flags *fla
                 }
                 sync_directories(subdirectories, num_directories, flags);
             } else {
-                VERBOSE_PRINT("Syncing file %s\n", master_file->name);
+                VERBOSE_PRINT("Syncing file \"%s\"\n", master_file->name);
                 int master_index = find_master(&master_file, i, &directory_contents, num_directories);
-                VERBOSE_PRINT("Master file for %s is in directory %s\n", master_file->name, directories[master_index]);
+                VERBOSE_PRINT("Master file for \"%s\" is in directory %s\n", master_file->name, directories[master_index]);
                 sync_master(master_file, master_index, directories, num_directories, flags);
             }
             directory_contents[i] = directory_contents[i]->next;
         }
     }
+    VERBOSE_PRINT("Finished syncing files and subdirectories within the current directory\n");
 }
