@@ -55,9 +55,8 @@ void sync_master(struct file *master, int master_index, char **directories, int 
     if (!flags->no_sync_flag) {
         master_file = fopen(master_path, "rb");
     }
-    if (flags->copy_perm_time_flag) {
-        char mode_string[11];
-        sprintf(mode_string, "%o", master->permissions);
+    if (flags->copy_perm_time_flag && flags->verbose_flag) {
+        char *mode_string = permissions(master->permissions);
         VERBOSE_PRINT("Master file %s has permissions %s and modification time %lld\n", master_path, mode_string, master->edit_time);
     }
     for (int i = 0; i < num_directories; i++) {

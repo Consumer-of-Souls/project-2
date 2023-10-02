@@ -63,9 +63,9 @@ struct flags {
 
 char *glob2regex(char *);
 
-int find_master(struct file **, int, struct file_node ***, int);
+char *permissions(int);
 
-void copy_file(FILE *, long long int, char *, struct flags *);
+int find_master(struct file **, int, struct file_node ***, int);
 
 void sync_master(struct file *, int, char **, int, struct flags *);
 
