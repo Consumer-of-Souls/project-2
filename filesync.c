@@ -55,6 +55,11 @@ void sync_master(struct file *master, int master_index, char **directories, int 
     if (!flags->no_sync_flag) {
         master_file = fopen(master_path, "rb");
     }
+    if (flags->copy_perm_time_flag) {
+        char mode_string[11];
+        sprintf(mode_string, "%o", master->permissions);
+        VERBOSE_PRINT("Master file %s has permissions %s and modification time %lld\n", master_path, mode_string, master->edit_time);
+    }
     for (int i = 0; i < num_directories; i++) {
         if (i != master_index) {
             // If the directory is not the master directory, overwrite the file in the directory with the master file
@@ -64,6 +69,16 @@ void sync_master(struct file *master, int master_index, char **directories, int 
                 copy_file(master_file, master->size, filepath, flags);
             }
             VERBOSE_PRINT("Copied master file %s to %s\n", master_path, filepath);
+            if (flags->copy_perm_time_flag) {
+                struct utimbuf times;
+                times.actime = master->edit_time;
+                times.modtime = master->edit_time;
+                if (!flags->no_sync_flag) {
+                    utime(filepath, &times);
+                    chmod(filepath, master->permissions);
+                }
+                VERBOSE_PRINT("Copied permissions and time from %s to %s\n", master_path, filepath);
+            }
             free(filepath);
         }
     }
