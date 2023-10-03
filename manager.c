@@ -85,37 +85,49 @@ struct file_node **create_directory_contents(char **directories, int num_directo
 
 void sync_directories(char **directories, int num_directories, struct flags *flags) {
     // A function that takes an array of directory names, and syncs the files in those directories
+    
+    // The contents of the directories are stored in an array of linked lists of file_nodes, with each array index corresponding to a directory
     struct file_node **directory_contents = create_directory_contents(directories, num_directories, flags);
     if (flags->verbose_flag) {
+        // Print the contents of each directory
         print_directories(directory_contents, directories, num_directories);
     }
+    // Iterate through each directory (each array index)
     for (int i = 0; i < num_directories; i++) {
+        // For each directory, iterate through the linked list of file_nodes
         while (directory_contents[i] != NULL) {
-            struct file *master_file = directory_contents[i]->file;
+            // For each file_node, sync the file or subdirectory
+            struct file *master_file = directory_contents[i]->file; // The file or subdirectory to sync
             if (strcmp(master_file->type, "directory") == 0) {
-                // If the file is a directory, create a placeholder subdirectory in each directory that doesn't contain the subdirectory
+                // If the file is a directory, create a placeholder subdirectory in each directory that doesn't already contain it
                 placeholder_dirs(master_file->name, i, directories, &directory_contents, num_directories, flags);
-                char **subdirectories = malloc_data(num_directories * sizeof(char *));
+                char **subdirectories = malloc_data(num_directories * sizeof(char *)); // Allocate an array of subdirectory names
                 for (int j = 0; j < num_directories; j++) {
+                    // For each directory, create a subdirectory name by concatenating the directory name with the master directory name
                     subdirectories[j] = malloc_data(strlen(directories[j]) + strlen(master_file->name) + 2);
                     sprintf(subdirectories[j], "%s/%s", directories[j], master_file->name);
                 }
-                sync_directories(subdirectories, num_directories, flags);
+                sync_directories(subdirectories, num_directories, flags); // Recursively sync the subdirectories
+                // Free the subdirectory names
                 for (int j = 0; j < num_directories; j++) {
                     free(subdirectories[j]);
                 }
                 free(subdirectories);
             } else {
                 VERBOSE_PRINT("Syncing file \"%s\"\n", master_file->name);
+                // Find the index of the directory that contains the master file and the master file itself
                 int master_index = find_master(&master_file, i, &directory_contents, num_directories);
                 VERBOSE_PRINT("Master file for \"%s\" is in directory %s\n", master_file->name, directories[master_index]);
+                // Sync the master file by overwriting the other files with the same name in the other directories
                 sync_master(master_file, master_index, directories, num_directories, flags);
             }
+            // Free the master file and the file_node as it has been synced
             free_file(master_file);
             free(directory_contents[i]);
             directory_contents[i] = directory_contents[i]->next;
         }
     }
+    // Free the array used to store the contents of the directories (now empty)
     free(directory_contents);
     VERBOSE_PRINT("Finished syncing files and subdirectories within the current directory\n");
 }
