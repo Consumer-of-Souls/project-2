@@ -67,5 +67,10 @@ int main(int argc, char **argv) {
     }
     sync_directories(directories, num_directories, flags);
     VERBOSE_PRINT("All files and subdirectories synced\n");
+    for (int i = 0; i < num_directories; i++) {
+        free(directories[i]);
+    }
+    free(directories);
+    free_flags(flags);
     return 0;
 }

@@ -10,8 +10,11 @@ int find_master(struct file **master_file, int dir_index, struct file_node ***di
             struct file *current_file = current_node->file;
             if (strcmp((*master_file)->name, current_file->name) == 0) {
                 if ((*master_file)->edit_time < current_file->edit_time) {
+                    free_file(*master_file);
                     *master_file = current_file;
                     master_index = i;
+                } else {
+                    free_file(current_file);
                 }
                 // Remove the file from the linked list, as it has been found
                 if (prev_node == NULL) {
@@ -19,6 +22,7 @@ int find_master(struct file **master_file, int dir_index, struct file_node ***di
                 } else {
                     prev_node->next = current_node->next;
                 }
+                free(current_node);
                 break; // Break out of the loop, as the file has been found (will move to the next directory)
             }
             prev_node = current_node;
@@ -52,6 +56,12 @@ void copy_files(char *master_path, long long int master_size, char **filepaths, 
                 fwrite(buffer, 1, bytes_read, files[i]);
             }
         }
+        free(buffer);
+        fclose(master_file);
+        for (int i = 0; i < num_directories; i++) {
+            fclose(files[i]);
+        }
+        free(files);
     }
     for (int i=0; i<num_directories; i++) {
         VERBOSE_PRINT("Copied master file \"%s\" to file \"%s\"\n", master_path, filepaths[i]);
@@ -73,7 +83,6 @@ void sync_master(struct file *master, int master_index, char **directories, int 
         filepaths[i - passed_master] = malloc_data(strlen(directories[i]) + strlen(filename) + 2);
         sprintf(filepaths[i - passed_master], "%s/%s", directories[i], filename);
     }
-    free(filename);
     copy_files(master_path, master->size, filepaths, num_directories-1, flags);
     if (flags->copy_perm_time_flag) {
         char *readable_permissions;
@@ -100,5 +109,8 @@ void sync_master(struct file *master, int master_index, char **directories, int 
         }
     }
     free(master_path);
+    for (int i=0; i<num_directories-1; i++) {
+        free(filepaths[i]);
+    }
     free(filepaths);
 }

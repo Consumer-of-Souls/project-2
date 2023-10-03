@@ -43,6 +43,7 @@ struct file_node **create_directory_contents(char **directories, int num_directo
                 fprintf(stderr, "Error: could not get file info for file \"%s\"\n", filepath);
                 exit(EXIT_FAILURE);
             }
+            free(filepath);
             if (S_ISDIR(file_info.st_mode)) {
                 if (!flags->recursive_flag) {
                     VERBOSE_PRINT("Skipping directory %s\n", filename);
@@ -63,10 +64,10 @@ struct file_node **create_directory_contents(char **directories, int num_directo
             struct file *new_file = malloc_data(sizeof(struct file));
             new_file->name = strdup(filename);
             if (S_ISDIR(file_info.st_mode)) {
-                new_file->type = "directory";
+                new_file->type = strdup("directory");
                 VERBOSE_PRINT("Added subdirectory %s to directory %s contents\n", filename, directories[i]);
             } else {
-                new_file->type = "file";
+                new_file->type = strdup("file");
                 VERBOSE_PRINT("Added file \"%s\" to directory %s contents\n", filename, directories[i]);
             }
             new_file->permissions = file_info.st_mode;
@@ -100,14 +101,21 @@ void sync_directories(char **directories, int num_directories, struct flags *fla
                     sprintf(subdirectories[j], "%s/%s", directories[j], master_file->name);
                 }
                 sync_directories(subdirectories, num_directories, flags);
+                for (int j = 0; j < num_directories; j++) {
+                    free(subdirectories[j]);
+                }
+                free(subdirectories);
             } else {
                 VERBOSE_PRINT("Syncing file \"%s\"\n", master_file->name);
                 int master_index = find_master(&master_file, i, &directory_contents, num_directories);
                 VERBOSE_PRINT("Master file for \"%s\" is in directory %s\n", master_file->name, directories[master_index]);
                 sync_master(master_file, master_index, directories, num_directories, flags);
             }
+            free_file(master_file);
+            free(directory_contents[i]);
             directory_contents[i] = directory_contents[i]->next;
         }
     }
+    free(directory_contents);
     VERBOSE_PRINT("Finished syncing files and subdirectories within the current directory\n");
 }

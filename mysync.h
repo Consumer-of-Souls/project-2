@@ -75,16 +75,16 @@ int check_patterns(struct pattern *, char *);
 
 void *malloc_data(size_t);
 
-struct file_node **create_directory_contents(char **, int, struct flags *);
-
 void sync_directories(char **, int, struct flags *);
 
 void print_directories(struct file_node **, char **, int);
 
-void create_directory(char *, char *, struct flags *);
-
 void placeholder_dirs(char *, int, char **, struct file_node ***, int, struct flags *);
 
 int check_directories(char **, int, struct flags *);
+
+void free_flags(struct flags *);
+
+void free_file(struct file *);
 
 #endif

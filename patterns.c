@@ -13,6 +13,7 @@ void enqueue_pattern(struct pattern **head, char *glob) {
         fprintf(stderr, "Error: could not compile regex %s\n", regex);
         exit(EXIT_FAILURE);
     }
+    free(regex);
     new_pattern->next = *head;
     *head = new_pattern;
 }
