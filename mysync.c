@@ -7,9 +7,6 @@
 // 3. The newest version of the file, the index of its directory, and the directories are passed to a function that overwrites (or creates) the file with the master file's name in each directory that is not the master directory so it contains the master file's contents
 // 4. Return to step 2 until the directory array is empty (all files have been synced)
 
-// Clarification: if in different directories there are files with the same name, but different types (one is a directory, one is a file), what should happen? Are they skipped, or would one overwrite the other?
-// Clarification: Will files still be overwritten if they contain the same contents as the master file?
-
 int main(int argc, char **argv) {
     struct flags *flags = malloc_data(sizeof(struct flags));
     flags->all_flag = 0;

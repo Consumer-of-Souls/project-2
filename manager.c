@@ -12,13 +12,13 @@ int check_directories(char **directories, int num_directories, struct flags *fla
     return 1;
 }
 
-struct file_node **create_directory_contents(char **directories, int num_directories, struct flags *flags) {
-    struct file_node **directory_contents = malloc_data(num_directories * sizeof(struct file_node *));
+struct file_names *read_directories(struct hashtable **hashtable, char **directories, int num_directories, struct flags *flags) {
+    // A function that takes a hashtable, an array of directory names, and the number of directories, and reads the directories into the hashtable, returning a linked list of all the file names
+    struct file_names *all_names = NULL;
     DIR *dir;
     struct dirent *entry;
     struct stat file_info;
-    for (int i = 0; i < num_directories; i++) {
-        directory_contents[i] = NULL;
+    for (int i=0; i<num_directories; i++) {
         VERBOSE_PRINT("Reading directory %s\n", directories[i]);
         if (flags->no_sync_flag && access(directories[i], F_OK) == -1) {
             continue;
@@ -49,6 +49,39 @@ struct file_node **create_directory_contents(char **directories, int num_directo
                     VERBOSE_PRINT("Skipping directory %s\n", filename);
                     continue;
                 }
+                VERBOSE_PRINT("Found directory %s\n", filename);
+                void *data = get(*hashtable, filename);
+                if (data == NULL) {
+                    // If the directory does not exist in the hashtable, add it to the hashtable
+                    struct dir_indexes *new_dir_indexes = malloc_data(sizeof(struct dir_indexes));
+                    new_dir_indexes->type_id = 0;
+                    struct index *new_index = malloc_data(sizeof(struct index));
+                    new_index->index = i;
+                    new_index->next = NULL;
+                    new_dir_indexes->head = new_index;
+                    new_dir_indexes->tail = new_index;
+                    put(hashtable, filename, (void *)new_dir_indexes);
+                    struct file_names *new_file_name = malloc_data(sizeof(struct file_names));
+                    new_file_name->name = strdup(filename);
+                    new_file_name->next = all_names;
+                    all_names = new_file_name;
+                    VERBOSE_PRINT("Added directory %s to hashtable\n", filename);
+                } else {
+                    // If the key exists, check if the data is a dir_index struct
+                    int type = *(int *)data;
+                    if (type != 0) {
+                        fprintf(stderr, "Error: key \"%s\" doesn't map to a directory\n", filename);
+                        exit(EXIT_FAILURE);
+                    }
+                    // If the data is a dir_index struct, add the directory index to the linked list
+                    struct dir_indexes *current_dir_indexes = (struct dir_indexes *)data;
+                    struct index *new_index = malloc_data(sizeof(struct index));
+                    new_index->index = i;
+                    new_index->next = NULL;
+                    current_dir_indexes->tail->next = new_index;
+                    current_dir_indexes->tail = new_index;
+                    VERBOSE_PRINT("Added directory %s's index to hashtable\n", filename);
+                }
             } else {
                 // Ensure the entry doesn't satisfy the ignore patterns
                 if (flags->ignore1 != NULL && check_patterns(flags->ignore1, filename)) {
@@ -60,74 +93,99 @@ struct file_node **create_directory_contents(char **directories, int num_directo
                     VERBOSE_PRINT("Skipping file \"%s\" as it does not match an only pattern\n", filename);
                     continue;
                 }
+                // Get the data for the current key from the hashtable
+                VERBOSE_PRINT("Found file \"%s\"\n", filename);
+                void *data = get(*hashtable, filename);
+                if (data == NULL) {
+                    // If the file does not exist in the hashtable, add it to the hashtable
+                    struct file *new_file = malloc_data(sizeof(struct file));
+                    new_file->type_id = 1;
+                    new_file->permissions = file_info.st_mode;
+                    new_file->edit_time = file_info.st_mtime;
+                    new_file->size = file_info.st_size;
+                    new_file->directory_index = i;
+                    put(hashtable, filename, (void *)new_file);
+                    // Add the filename to the linked list
+                    struct file_names *new_file_name = malloc_data(sizeof(struct file_names));
+                    new_file_name->name = strdup(filename);
+                    new_file_name->next = all_names;
+                    all_names = new_file_name;
+                    VERBOSE_PRINT("Added file \"%s\" to hashtable\n", filename);
+                } else {
+                    // If the key exists, check if the data is a file struct
+                    int type = *(int *)data;
+                    if (type != 1) {
+                        fprintf(stderr, "Error: key \"%s\" doesn't map to a file\n", filename);
+                        exit(EXIT_FAILURE);
+                    }
+                    // If the data is a file struct, check if the edit time is newer
+                    struct file *current_file = (struct file *)data;
+                    if (file_info.st_mtime > current_file->edit_time) {
+                        // If the edit time is newer, replace the file in the hashtable
+                        current_file->permissions = file_info.st_mode;
+                        current_file->edit_time = file_info.st_mtime;
+                        current_file->size = file_info.st_size;
+                        current_file->directory_index = i;
+                        VERBOSE_PRINT("Replaced file \"%s\" in hashtable as the edit time is newer\n", filename);
+                    } else {
+                        VERBOSE_PRINT("Did not replace file \"%s\" in hashtable as the edit time is not newer\n", filename);
+                    }
+                }
             } 
-            struct file *new_file = malloc_data(sizeof(struct file));
-            new_file->name = strdup(filename);
-            if (S_ISDIR(file_info.st_mode)) {
-                new_file->type = strdup("directory");
-                VERBOSE_PRINT("Added subdirectory %s to directory %s contents\n", filename, directories[i]);
-            } else {
-                new_file->type = strdup("file");
-                VERBOSE_PRINT("Added file \"%s\" to directory %s contents\n", filename, directories[i]);
-            }
-            new_file->permissions = file_info.st_mode;
-            new_file->edit_time = file_info.st_mtime;
-            new_file->size = file_info.st_size;
-            struct file_node *new_node = malloc_data(sizeof(struct file_node));
-            new_node->file = new_file;
-            new_node->next = directory_contents[i];
-            directory_contents[i] = new_node;
         }
-        closedir(dir);
     }
-    return directory_contents;
+    return all_names;
 }
 
 void sync_directories(char **directories, int num_directories, struct flags *flags) {
     // A function that takes an array of directory names, and syncs the files in those directories
-    
-    // The contents of the directories are stored in an array of linked lists of file_nodes, with each array index corresponding to a directory
-    struct file_node **directory_contents = create_directory_contents(directories, num_directories, flags);
+    // Create a hashtable that is updated to contain the newest files for each filename and all of the subdirectories and the directories the subdirectories are already in
+    struct hashtable *hashtable = create_hashtable(100);
+    struct file_names *all_names = read_directories(&hashtable, directories, num_directories, flags);
+    VERBOSE_PRINT("Finished reading directories\n");
+    // Now that we have the hashtable of the newest files and the location of the subdirectories, we can sync the files
     if (flags->verbose_flag) {
-        // Print the contents of each directory
-        print_directories(directory_contents, directories, num_directories);
+        print_all(hashtable, all_names, directories);
     }
-    // Iterate through each directory (each array index)
-    for (int i = 0; i < num_directories; i++) {
-        // For each directory, iterate through the linked list of file_nodes
-        while (directory_contents[i] != NULL) {
-            // For each file_node, sync the file or subdirectory
-            struct file *master_file = directory_contents[i]->file; // The file or subdirectory to sync
-            if (strcmp(master_file->type, "directory") == 0) {
-                // If the file is a directory, create a placeholder subdirectory in each directory that doesn't already contain it
-                placeholder_dirs(master_file->name, i, directories, &directory_contents, num_directories, flags);
-                char **subdirectories = malloc_data(num_directories * sizeof(char *)); // Allocate an array of subdirectory names
-                for (int j = 0; j < num_directories; j++) {
-                    // For each directory, create a subdirectory name by concatenating the directory name with the master directory name
-                    subdirectories[j] = malloc_data(strlen(directories[j]) + strlen(master_file->name) + 2);
-                    sprintf(subdirectories[j], "%s/%s", directories[j], master_file->name);
-                }
-                sync_directories(subdirectories, num_directories, flags); // Recursively sync the subdirectories
-                // Free the subdirectory names
-                for (int j = 0; j < num_directories; j++) {
-                    free(subdirectories[j]);
-                }
-                free(subdirectories);
-            } else {
-                VERBOSE_PRINT("Syncing file \"%s\"\n", master_file->name);
-                // Find the index of the directory that contains the master file and the master file itself
-                int master_index = find_master(&master_file, i, &directory_contents, num_directories);
-                VERBOSE_PRINT("Master file for \"%s\" is in directory %s\n", master_file->name, directories[master_index]);
-                // Sync the master file by overwriting the other files with the same name in the other directories
-                sync_master(master_file, master_index, directories, num_directories, flags);
-            }
-            // Free the master file and the file_node as it has been synced
-            free_file(master_file);
-            free(directory_contents[i]);
-            directory_contents[i] = directory_contents[i]->next;
+    while (all_names != NULL) {
+        char *filename = all_names->name;
+        // Get the data for the current key from the hashtable
+        void *data = get(hashtable, filename);
+        if (data == NULL) {
+            fprintf(stderr, "Error: data for key \"%s\" is NULL\n", filename);
+            exit(EXIT_FAILURE);
         }
+        int type = *(int *)data;
+        if (type == 1) {
+            // If the data is a file struct, sync the file
+            struct file *current_file = (struct file *)data;
+            VERBOSE_PRINT("Syncing file \"%s\"\n", filename);
+            sync_master(current_file, filename, directories, num_directories, flags);
+            delete(&hashtable, filename);
+        } else if (type == 0) {
+            // If the data is a dir_index struct, sync the directory
+            struct dir_indexes *current_dir_indexes = (struct dir_indexes *)data;
+            VERBOSE_PRINT("Syncing directory \"%s\"\n", filename);
+            placeholder_dirs(current_dir_indexes, filename, directories, num_directories, flags);
+            delete(&hashtable, filename);
+            // Create a new array of subdirectories
+            char **subdirectories = malloc_data((num_directories) * sizeof(char *));
+            for (int i=0; i<num_directories; i++) {
+                subdirectories[i] = malloc_data(strlen(directories[i]) + strlen(filename) + 2);
+                sprintf(subdirectories[i], "%s/%s", directories[i], filename);
+            }
+            // Recursively sync the subdirectories
+            sync_directories(subdirectories, num_directories, flags);
+            VERBOSE_PRINT("Finished syncing subdirectory \"%s\"\n", filename);
+        } else {
+            fprintf(stderr, "Error: data for key \"%s\" is not a file struct or a dir_index struct\n", filename);
+            exit(EXIT_FAILURE);
+        }
+        struct file_names *next_file_name = all_names->next;
+        free(all_names->name);
+        free(all_names);
+        all_names = next_file_name;
     }
-    // Free the array used to store the contents of the directories (now empty)
-    free(directory_contents);
-    VERBOSE_PRINT("Finished syncing files and subdirectories within the current directory\n");
+    free(hashtable->table);
+    free(hashtable);
 }

@@ -74,10 +74,11 @@ void sync_master(struct file *master, char *filename, char **directories, int nu
             VERBOSE_PRINT("Set permissions for file \"%s\" to those of master file \"%s\"\n", filepaths[i], master_path);
             free(filepaths[i]);
         }
+    } else {
+        for (int i=0; i<num_directories-1; i++) {
+            free(filepaths[i]);
+        }
     }
     free(master_path);
-    for (int i=0; i<num_directories-1; i++) {
-        free(filepaths[i]);
-    }
     free(filepaths);
 }
