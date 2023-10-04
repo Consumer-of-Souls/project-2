@@ -1,15 +1,11 @@
 #include "mysync.h"
 
-int check_directories(char **directories, int num_directories, struct flags *flags) {
-    // A function that takes an array of directory names, and returns 1 if all the directories exist, and 0 otherwise
-    for (int i = 0; i < num_directories; i++) {
-        if (access(directories[i], F_OK) == -1) {
-            VERBOSE_PRINT("Directory %s does not exist\n", directories[i]);
-            return 0;
-        }
-    }
-    VERBOSE_PRINT("All directories exist\n");
-    return 1;
+void add_file_name(struct file_names **all_names, char *filename) {
+    // A function that takes a linked list of file names and a file name, and adds the file name to the linked list
+    struct file_names *new_file_name = malloc_data(sizeof(struct file_names));
+    new_file_name->name = strdup(filename);
+    new_file_name->next = *all_names;
+    *all_names = new_file_name;
 }
 
 struct file_names *read_directories(struct hashtable **hashtable, char **directories, int num_directories, struct flags *flags) {
@@ -61,10 +57,7 @@ struct file_names *read_directories(struct hashtable **hashtable, char **directo
                     new_dir_indexes->head = new_index;
                     new_dir_indexes->tail = new_index;
                     put(hashtable, filename, (void *)new_dir_indexes);
-                    struct file_names *new_file_name = malloc_data(sizeof(struct file_names));
-                    new_file_name->name = strdup(filename);
-                    new_file_name->next = all_names;
-                    all_names = new_file_name;
+                    add_file_name(&all_names, filename);
                     VERBOSE_PRINT("Added directory %s to hashtable\n", filename);
                 } else {
                     // If the key exists, check if the data is a dir_index struct
@@ -106,10 +99,7 @@ struct file_names *read_directories(struct hashtable **hashtable, char **directo
                     new_file->directory_index = i;
                     put(hashtable, filename, (void *)new_file);
                     // Add the filename to the linked list
-                    struct file_names *new_file_name = malloc_data(sizeof(struct file_names));
-                    new_file_name->name = strdup(filename);
-                    new_file_name->next = all_names;
-                    all_names = new_file_name;
+                    add_file_name(&all_names, filename);
                     VERBOSE_PRINT("Added file \"%s\" to hashtable\n", filename);
                 } else {
                     // If the key exists, check if the data is a file struct
