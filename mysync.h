@@ -25,17 +25,42 @@
 
 //  mysync (v1.0)
 
-struct file_node {
-    struct file *file;
-    struct file_node *next;
+
+struct hashtable {
+    // A struct that represents a hashtable
+    int size; // The size of the hashtable
+    int num_elements; // The number of elements in the hashtable
+    struct node **table; // The table of file nodes
+};
+
+struct file_names {
+    char *name;
+    struct file_names *next;
+};
+
+struct node {
+    char *name;
+    void *data;
+    struct node *next;
 };
 
 struct file {
-    char *name;
+    int type_id;
     int permissions;
     long long int edit_time;
-    char *type;
     long long int size;
+    int directory_index;
+};
+
+struct dir_indexes {
+    int type_id;
+    struct index *head;
+    struct index *tail; 
+};
+
+struct index {
+    int index;
+    struct index *next;
 };
 
 struct pattern {
@@ -65,9 +90,7 @@ char *glob2regex(char *);
 
 char *permissions(int);
 
-int find_master(struct file **, int, struct file_node ***, int);
-
-void sync_master(struct file *, int, char **, int, struct flags *);
+void sync_master(struct file *, char*, char **, int, struct flags *);
 
 void enqueue_pattern(struct pattern **, char *);
 
@@ -77,14 +100,20 @@ void *malloc_data(size_t);
 
 void sync_directories(char **, int, struct flags *);
 
-void print_directories(struct file_node **, char **, int);
-
-void placeholder_dirs(char *, int, char **, struct file_node ***, int, struct flags *);
+void placeholder_dirs(struct dir_indexes *, char *, char **, int, struct flags *);
 
 int check_directories(char **, int, struct flags *);
 
 void free_flags(struct flags *);
 
 void free_file(struct file *);
+
+void put(struct hashtable **, char *, void *);
+
+struct node *get(struct hashtable *, char *);
+
+void delete(struct hashtable **, char *);
+
+struct hashtable *create_hashtable(size_t);
 
 #endif

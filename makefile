@@ -1,6 +1,6 @@
 PROJECT = mysync
 HEADERS = $(PROJECT).h
-OBJ = mysync.o dirsync.o debugging.o manager.o lowlevels.o patterns.o filesync.o glob2regex.o readperm.o
+OBJ = mysync.o dirsync.o manager2.o lowlevels.o patterns.o filesync.o glob2regex.o readperm.o hashtable.o
 
 C11 = cc -std=c11
 CFLAGS = -Wall -Werror

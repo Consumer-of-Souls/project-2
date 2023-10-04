@@ -1,12 +1,5 @@
 #include "mysync.h"
 
-void free_file(struct file *file) {
-    // Frees the memory allocated for the file
-    free(file->name);
-    free(file->type);
-    free(file);
-}
-
 void free_patterns(struct pattern *pattern) {
     // Frees the memory allocated for the patterns
     struct pattern *current_pattern = pattern;

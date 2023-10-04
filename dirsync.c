@@ -15,33 +15,14 @@ void create_directory(char *dir_name, char *parent_dir, struct flags *flags) {
     free(dirpath);
 }
 
-void placeholder_dirs(char *dir_name, int dir_index, char **directories, struct file_node ***directory_contents, int num_directories, struct flags *flags) {
-    for (int i = 0; i < num_directories; i++) {
-        if (i < dir_index) {
-            // If the directory is before the master directory, create a placeholder subdirectory in the directory
-            create_directory(dir_name, directories[i], flags);
-        } else if (i > dir_index) {
-            // Check if the subdirectory exists in the current directory
-            struct file_node *current_node = (*directory_contents)[i];
-            struct file_node *prev_node = NULL;
-            while (current_node != NULL) {
-                struct file *current_file = current_node->file;
-                if (strcmp(dir_name, current_file->name) == 0) {
-                    // Remove the subdirectory from the linked list, as it has been found
-                    if (prev_node == NULL) {
-                        (*directory_contents)[i] = current_node->next;
-                    } else {
-                        prev_node->next = current_node->next;
-                    }
-                    break;
-                }
-                prev_node = current_node;
-                current_node = current_node->next;
-            }
-            if (current_node == NULL) {
-                // If the subdirectory does not exist in the current directory, create a placeholder subdirectory in the directory
-                create_directory(dir_name, directories[i], flags);
-            }
+void placeholder_dirs(struct dir_indexes *dir_indexes, char *dir_name, char **directories, int num_directories, struct flags *flags) {
+    // A function that takes a directory index, a directory name, an array of directory names, and the number of directories, and creates placeholder directories in the directories that are not in the directory index
+    struct index *current_dir_index = dir_indexes->head;
+    for (int i=0; i<num_directories; i++) {
+        if (current_dir_index != NULL && i == current_dir_index->index) {
+            current_dir_index = current_dir_index->next;
+            continue;
         }
+        create_directory(dir_name, directories[i], flags);
     }
 }
