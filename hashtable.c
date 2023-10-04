@@ -150,7 +150,7 @@ void delete(struct hashtable **hashtable, char *key) {
                 }
                 free(current_node);
                 (*hashtable)->num_elements--;
-                if ((*hashtable)->num_elements < 0.25*(*hashtable)->size && (*hashtable)->size > 100) {
+                if ((*hashtable)->num_elements < 0.25*(*hashtable)->size && (*hashtable)->size > DEFAULT_HASHTABLE_SIZE) {
                     // If the hashtable is too empty, resize it
                     resize(hashtable, (*hashtable)->size / 2);
                 }

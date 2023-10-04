@@ -15,6 +15,8 @@
 #define _SC_PAGESIZE 4096
 #endif
 
+#define DEFAULT_HASHTABLE_SIZE 100
+
 //  you may need other standard header files
 
 
@@ -115,5 +117,7 @@ struct node *get(struct hashtable *, char *);
 void delete(struct hashtable **, char *);
 
 struct hashtable *create_hashtable(size_t);
+
+void print_all(struct hashtable *, struct file_names *, char **);
 
 #endif

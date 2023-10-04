@@ -12,11 +12,8 @@ int check_directories(char **directories, int num_directories, struct flags *fla
     return 1;
 }
 
-
-void sync_directories(char **directories, int num_directories, struct flags *flags) {
-    // A function that takes an array of directory names, and syncs the files in those directories
-    // Create a hashtable that is updated to contain the newest files for each filename and all of the subdirectories and the directories the subdirectories are already in
-    struct hashtable *hashtable = create_hashtable(100);
+struct file_names *read_directories(struct hashtable **hashtable, char **directories, int num_directories, struct flags *flags) {
+    // A function that takes an array of directory names, and returns a linked list of all the files in those directories
     struct file_names *all_names = NULL;
     DIR *dir;
     struct dirent *entry;
@@ -54,7 +51,7 @@ void sync_directories(char **directories, int num_directories, struct flags *fla
                 }
                 // Get the data for the current key from the hashtable
                 VERBOSE_PRINT("Found directory %s\n", filename);
-                void *data = get(hashtable, filename);
+                void *data = get(*hashtable, filename);
                 if (data == NULL) {
                     // If the key does not exist, put the directory index in the hashtable
                     struct dir_indexes *new_dir_indexes = malloc_data(sizeof(struct dir_indexes));
@@ -64,7 +61,7 @@ void sync_directories(char **directories, int num_directories, struct flags *fla
                     new_index->next = NULL;
                     new_dir_indexes->head = new_index;
                     new_dir_indexes->tail = new_index;
-                    put(&hashtable, filename, (void *)new_dir_indexes);
+                    put(hashtable, filename, (void *)new_dir_indexes);
                     struct file_names *new_file_name = malloc_data(sizeof(struct file_names));
                     new_file_name->name = strdup(filename);
                     new_file_name->next = all_names;
@@ -99,7 +96,7 @@ void sync_directories(char **directories, int num_directories, struct flags *fla
                 }
                 // Get the data for the current key from the hashtable
                 VERBOSE_PRINT("Found file \"%s\"\n", filename);
-                void *data = get(hashtable, filename);
+                void *data = get(*hashtable, filename);
                 if (data == NULL) {
                     // If the key does not exist, put the file in the hashtable
                     struct file *new_file = malloc_data(sizeof(struct file));
@@ -108,7 +105,7 @@ void sync_directories(char **directories, int num_directories, struct flags *fla
                     new_file->edit_time = file_info.st_mtime;
                     new_file->size = file_info.st_size;
                     new_file->directory_index = i;
-                    put(&hashtable, filename, (void *)new_file);
+                    put(hashtable, filename, (void *)new_file);
                     // Add the filename to the linked list
                     struct file_names *new_file_name = malloc_data(sizeof(struct file_names));
                     new_file_name->name = strdup(filename);
@@ -138,10 +135,19 @@ void sync_directories(char **directories, int num_directories, struct flags *fla
             } 
         }
     }
+    return all_names;
+}
 
+void sync_directories(char **directories, int num_directories, struct flags *flags) {
+    // A function that takes an array of directory names, and syncs the files in those directories
+    // Create a hashtable that is updated to contain the newest files for each filename and all of the subdirectories and the directories the subdirectories are already in
+    struct hashtable *hashtable = create_hashtable(100);
+    struct file_names *all_names = read_directories(&hashtable, directories, num_directories, flags);
     VERBOSE_PRINT("Finished reading directories\n");
     // Now that we have the hashtable of the newest files and the location of the subdirectories, we can sync the files
-
+    if (flags->verbose_flag) {
+        print_all(hashtable, all_names, directories);
+    }
     while (all_names != NULL) {
         char *filename = all_names->name;
         // Get the data for the current key from the hashtable
