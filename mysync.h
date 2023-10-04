@@ -108,8 +108,6 @@ int check_directories(char **, int, struct flags *);
 
 void free_flags(struct flags *);
 
-void free_file(struct file *);
-
 void put(struct hashtable **, char *, void *);
 
 struct node *get(struct hashtable *, char *);
