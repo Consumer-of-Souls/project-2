@@ -127,20 +127,20 @@ struct file_names *read_directories(struct hashtable **hashtable, char **directo
     return all_names;
 }
 
-void sync_directories(char **directories, int num_directories, struct flags *flags) {
+void sync_directories(struct hashtable **hashtable, char **directories, int num_directories, struct flags *flags) {
     // A function that takes an array of directory names, and syncs the files in those directories
     // Create a hashtable that is updated to contain the newest files for each filename and all of the subdirectories and the directories the subdirectories are already in
-    struct hashtable *hashtable = create_hashtable(100);
-    struct file_names *all_names = read_directories(&hashtable, directories, num_directories, flags);
+    struct file_names *all_names = read_directories(hashtable, directories, num_directories, flags);
+    struct file_names *dir_names = NULL;
     VERBOSE_PRINT("Finished reading directories\n");
     // Now that we have the hashtable of the newest files and the location of the subdirectories, we can sync the files
     if (flags->verbose_flag) {
-        print_all(hashtable, all_names, directories);
+        print_all(*hashtable, all_names, directories);
     }
     while (all_names != NULL) {
         char *filename = all_names->name;
         // Get the data for the current key from the hashtable
-        void *data = get(hashtable, filename);
+        void *data = get(*hashtable, filename);
         if (data == NULL) {
             fprintf(stderr, "Error: data for key \"%s\" is NULL\n", filename);
             exit(EXIT_FAILURE);
@@ -151,31 +151,44 @@ void sync_directories(char **directories, int num_directories, struct flags *fla
             struct file *current_file = (struct file *)data;
             VERBOSE_PRINT("Syncing file \"%s\"\n", filename);
             sync_master(current_file, filename, directories, num_directories, flags);
-            delete(&hashtable, filename);
+            delete(hashtable, filename);
+            struct file_names *next_file_name = all_names->next;
+            free(all_names->name);
+            free(all_names);
+            all_names = next_file_name;
         } else if (type == 0) {
             // If the data is a dir_index struct, sync the directory
             struct dir_indexes *current_dir_indexes = (struct dir_indexes *)data;
-            VERBOSE_PRINT("Syncing directory \"%s\"\n", filename);
             placeholder_dirs(current_dir_indexes, filename, directories, num_directories, flags);
-            delete(&hashtable, filename);
-            // Create a new array of subdirectories
-            char **subdirectories = malloc_data((num_directories) * sizeof(char *));
-            for (int i=0; i<num_directories; i++) {
-                subdirectories[i] = malloc_data(strlen(directories[i]) + strlen(filename) + 2);
-                sprintf(subdirectories[i], "%s/%s", directories[i], filename);
-            }
-            // Recursively sync the subdirectories
-            sync_directories(subdirectories, num_directories, flags);
-            VERBOSE_PRINT("Finished syncing subdirectory \"%s\"\n", filename);
+            delete(hashtable, filename);
+            struct file_names *next_file_name = all_names->next;
+            all_names->next = dir_names;
+            dir_names = all_names;
+            all_names = next_file_name;
         } else {
             fprintf(stderr, "Error: data for key \"%s\" is not a file struct or a dir_index struct\n", filename);
             exit(EXIT_FAILURE);
         }
-        struct file_names *next_file_name = all_names->next;
-        free(all_names->name);
-        free(all_names);
-        all_names = next_file_name;
     }
-    free(hashtable->table);
-    free(hashtable);
+    // Now that all files have been synced and the hashtable is empty, we can sync the directories
+    char *dir_name;
+    char **subdirectories = malloc_data(num_directories * sizeof(char *));
+    while (dir_names != NULL) {
+        dir_name = dir_names->name;
+        VERBOSE_PRINT("Syncing directory \"%s\"\n", dir_name);
+        for (int i=0; i<num_directories; i++) {
+            subdirectories[i] = malloc_data(strlen(directories[i]) + strlen(dir_name) + 2);
+            sprintf(subdirectories[i], "%s/%s", directories[i], dir_name);
+        }
+        sync_directories(hashtable, subdirectories, num_directories, flags);
+        VERBOSE_PRINT("Finished syncing subdirectory \"%s\"\n", dir_name);
+        for (int i=0; i<num_directories; i++) {
+            free(subdirectories[i]);
+        }
+        struct file_names *next_dir_name = dir_names->next;
+        free(dir_name);
+        free(dir_names);
+        dir_names = next_dir_name;
+    }
+    free(subdirectories);
 }

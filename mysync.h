@@ -100,7 +100,7 @@ int check_patterns(struct pattern *, char *);
 
 void *malloc_data(size_t);
 
-void sync_directories(char **, int, struct flags *);
+void sync_directories(struct hashtable **, char **, int, struct flags *);
 
 void placeholder_dirs(struct dir_indexes *, char *, char **, int, struct flags *);
 

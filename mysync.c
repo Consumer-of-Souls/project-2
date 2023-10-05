@@ -62,8 +62,11 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Error: invalid directories specified\n");
         return 1;
     }
-    sync_directories(directories, num_directories, flags);
+    struct hashtable *hashtable = create_hashtable(DEFAULT_HASHTABLE_SIZE);
+    sync_directories(&hashtable, directories, num_directories, flags);
     VERBOSE_PRINT("All files and subdirectories synced\n");
+    free(hashtable->table);
+    free(hashtable);
     for (int i = 0; i < num_directories; i++) {
         free(directories[i]);
     }
