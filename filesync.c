@@ -9,6 +9,7 @@ void copy_files(char *master_path, long long int master_size, char **filepaths, 
         }
         FILE **files = malloc_data(num_directories * sizeof(FILE *));
         for (int i = 0; i < num_directories; i++) {
+            chmod(filepaths[i], 0666); // Set the permissions of the file to 0666 so that we can write to it
             files[i] = fopen(filepaths[i], "wb");
             if (files[i] == NULL) {
                 fprintf(stderr, "Error: could not open file %s\n", filepaths[i]);
@@ -36,10 +37,10 @@ void copy_files(char *master_path, long long int master_size, char **filepaths, 
     }
 }
 
-void sync_master(struct file *master, char *filename, char **directories, int num_directories, struct flags *flags) {
+void sync_master(struct file *master, char *relpath, char **directories, int num_directories, struct flags *flags) {
     // A function that takes a master file and an array of directory names and overwrites the file in each directory that shares the master file's name with the master file
-    char *master_path = malloc_data(strlen(directories[master->directory_index]) + strlen(filename) + 2);
-    sprintf(master_path, "%s/%s", directories[master->directory_index], filename);
+    char *master_path = malloc_data(strlen(directories[master->directory_index]) + strlen(relpath) + 2);
+    sprintf(master_path, "%s/%s", directories[master->directory_index], relpath);
     char **filepaths = malloc_data((num_directories-1) * sizeof(char *));
     int passed_master = 0;
     for (int i=0; i<num_directories; i++) {
@@ -47,8 +48,8 @@ void sync_master(struct file *master, char *filename, char **directories, int nu
             passed_master = 1;
             continue;
         }
-        filepaths[i - passed_master] = malloc_data(strlen(directories[i]) + strlen(filename) + 2);
-        sprintf(filepaths[i - passed_master], "%s/%s", directories[i], filename);
+        filepaths[i - passed_master] = malloc_data(strlen(directories[i]) + strlen(relpath) + 2);
+        sprintf(filepaths[i - passed_master], "%s/%s", directories[i], relpath);
     }
     copy_files(master_path, master->size, filepaths, num_directories-1, flags);
     if (flags->copy_perm_time_flag) {

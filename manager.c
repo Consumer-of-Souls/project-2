@@ -123,6 +123,7 @@ struct file_names *read_directories(struct hashtable **hashtable, char **directo
                 }
             } 
         }
+        closedir(dir);
     }
     return all_names;
 }
@@ -130,6 +131,10 @@ struct file_names *read_directories(struct hashtable **hashtable, char **directo
 void sync_directories(struct hashtable **hashtable, char **directories, int num_directories, struct flags *flags) {
     // A function that takes an array of directory names, and syncs the files in those directories
     // Create a hashtable that is updated to contain the newest files for each filename and all of the subdirectories and the directories the subdirectories are already in
+    if ((*hashtable)->num_elements != 0) {
+        fprintf(stderr, "Error: hashtable is not empty\n");
+        exit(EXIT_FAILURE);
+    }
     struct file_names *all_names = read_directories(hashtable, directories, num_directories, flags);
     struct file_names *dir_names = NULL;
     VERBOSE_PRINT("Finished reading directories\n");
@@ -171,6 +176,10 @@ void sync_directories(struct hashtable **hashtable, char **directories, int num_
         }
     }
     // Now that all files have been synced and the hashtable is empty, we can sync the directories
+    if ((*hashtable)->num_elements != 0) {
+        fprintf(stderr, "Error: hashtable is not empty\n");
+        exit(EXIT_FAILURE);
+    }
     char *dir_name;
     char **subdirectories = malloc_data(num_directories * sizeof(char *));
     while (dir_names != NULL) {

@@ -101,7 +101,7 @@ void put(struct hashtable **hashtable, char *key, void *data) {
     }
 }
 
-struct node *get(struct hashtable *hashtable, char *key) {
+void *get(struct hashtable *hashtable, char *key) {
     // A function that takes a hashtable and a key, and returns the node with the key
     int index = hash(key, hashtable->size);
     // Check for collisions

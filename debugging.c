@@ -1,17 +1,17 @@
 #include "mysync.h"
 
-void print_all(struct hashtable *hashtable, struct file_names *all_names, char **directories) {
+void print_all(struct hashtable *hashtable, struct relpaths *relpaths, char **directories) {
     // A function that takes a hashtable and a linked list of file names, and prints all the files in the hashtable
-    struct file_names *current_name = all_names;
-    printf("Master files:\n");
+    struct relpaths *current_name = relpaths;
     while (current_name != NULL) {
-        void *data = get(hashtable, current_name->name);
+        void *data = get(hashtable, current_name->relpath);
         int type = *(int *)data;
         if (type == 0) {
-            printf("    %s (directory)\n", current_name->name);
+            // prints whether a directory is valid or invalid
+            printf("    \"%s\" which is %s\n", current_name->relpath, ((struct dir_indexes *)data)->valid ? "wanted" : "not wanted");
         } else {
             struct file *file = (struct file *)data;
-            printf("    %s (file) in directory %s\n", current_name->name, directories[file->directory_index]);
+            printf("    \"%s\" in directory %s\n", current_name->relpath, directories[file->directory_index]);
         }
         current_name = current_name->next;
     }

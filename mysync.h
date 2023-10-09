@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <regex.h>
 #include <utime.h>
+#include <stdbool.h>
 
 #ifndef _SC_PAGESIZE
 #define _SC_PAGESIZE 4096
@@ -35,9 +36,9 @@ struct hashtable {
     struct node **table; // The table of file nodes
 };
 
-struct file_names {
-    char *name;
-    struct file_names *next;
+struct relpaths {
+    char *relpath;
+    struct relpaths *next;
 };
 
 struct node {
@@ -56,6 +57,7 @@ struct file {
 
 struct dir_indexes {
     int type_id;
+    bool valid;
     struct index *head;
     struct index *tail; 
 };
@@ -96,26 +98,26 @@ void sync_master(struct file *, char*, char **, int, struct flags *);
 
 void enqueue_pattern(struct pattern **, char *);
 
-int check_patterns(struct pattern *, char *);
+bool check_patterns(struct pattern *, char *);
 
 void *malloc_data(size_t);
 
-void sync_directories(struct hashtable **, char **, int, struct flags *);
+void sync_directories(char **, int, struct flags *);
 
 void placeholder_dirs(struct dir_indexes *, char *, char **, int, struct flags *);
 
-int check_directories(char **, int, struct flags *);
+bool check_directories(char **, int, struct flags *);
 
 void free_flags(struct flags *);
 
 void put(struct hashtable **, char *, void *);
 
-struct node *get(struct hashtable *, char *);
+void *get(struct hashtable *, char *);
 
 void delete(struct hashtable **, char *);
 
 struct hashtable *create_hashtable(size_t);
 
-void print_all(struct hashtable *, struct file_names *, char **);
+void print_all(struct hashtable *, struct relpaths *, char **);
 
 #endif

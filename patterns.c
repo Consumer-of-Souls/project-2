@@ -18,18 +18,18 @@ void enqueue_pattern(struct pattern **head, char *glob) {
     *head = new_pattern;
 }
 
-int check_patterns(struct pattern *head, char *filename) {
-    // A function that takes a linked list of patterns and a filename, and returns 1 if the filename matches any of the patterns, and 0 otherwise
+bool check_patterns(struct pattern *head, char *filename) {
+    // A function that takes a linked list of patterns and a filename, and returns true if the filename matches any of the patterns, and false otherwise
     struct pattern *current_pattern = head;
     while (current_pattern != NULL) {
         int err = regexec(&(current_pattern->regex), filename, 0, NULL, 0);
         if (err == 0) {
-            return 1;
+            return true;
         } else if (err != REG_NOMATCH) {
             fprintf(stderr, "Error: could not execute regex\n");
             exit(EXIT_FAILURE);
         }
         current_pattern = current_pattern->next;
     }
-    return 0;
+    return false;
 }

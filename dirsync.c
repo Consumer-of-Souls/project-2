@@ -1,9 +1,9 @@
 #include "mysync.h"
 
-void create_directory(char *dir_name, char *parent_dir, struct flags *flags) {
+void create_directory(char *relpath, char *parent_dir, struct flags *flags) {
     // A function that takes a directory name and a parent directory name, and creates the directory in the parent directory
-    char *dirpath = malloc_data(strlen(parent_dir) + strlen(dir_name) + 2);
-    sprintf(dirpath, "%s/%s", parent_dir, dir_name);
+    char *dirpath = malloc_data(strlen(parent_dir) + strlen(relpath) + 2);
+    sprintf(dirpath, "%s/%s", parent_dir, relpath);
     if (!flags->no_sync_flag) {
         int result = mkdir(dirpath, 0777);
         if (result == -1) {
@@ -15,7 +15,7 @@ void create_directory(char *dir_name, char *parent_dir, struct flags *flags) {
     free(dirpath);
 }
 
-void placeholder_dirs(struct dir_indexes *dir_indexes, char *dir_name, char **directories, int num_directories, struct flags *flags) {
+void placeholder_dirs(struct dir_indexes *dir_indexes, char *relpath, char **directories, int num_directories, struct flags *flags) {
     // A function that takes a directory index, a directory name, an array of directory names, and the number of directories, and creates placeholder directories in the directories that are not in the directory index
     struct index *current_dir_index = dir_indexes->head;
     for (int i=0; i<num_directories; i++) {
@@ -23,6 +23,6 @@ void placeholder_dirs(struct dir_indexes *dir_indexes, char *dir_name, char **di
             current_dir_index = current_dir_index->next;
             continue;
         }
-        create_directory(dir_name, directories[i], flags);
+        create_directory(relpath, directories[i], flags);
     }
 }
