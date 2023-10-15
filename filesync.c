@@ -1,14 +1,14 @@
 #include "mysync.h"
 
-void copy_files(char *master_path, long long int master_size, char **filepaths, int num_directories, struct flags *flags) {
+void copy_files(char *master_path, long long int master_size, char **filepaths, int num_filepaths, struct flags *flags) {
     if (!flags->no_sync_flag) {
         FILE *master_file = fopen(master_path, "rb");
         if (master_file == NULL) {
             fprintf(stderr, "Error: could not open file %s\n", master_path);
             exit(EXIT_FAILURE);
         }
-        FILE **files = malloc_data(num_directories * sizeof(FILE *));
-        for (int i = 0; i < num_directories; i++) {
+        FILE **files = malloc_data(num_filepaths * sizeof(FILE *));
+        for (int i = 0; i < num_filepaths; i++) {
             chmod(filepaths[i], 0666); // Set the permissions of the file to 0666 so that we can write to it
             files[i] = fopen(filepaths[i], "wb");
             if (files[i] == NULL) {
@@ -21,18 +21,18 @@ void copy_files(char *master_path, long long int master_size, char **filepaths, 
         char *buffer = malloc_data(buffer_size);
         size_t bytes_read;
         while ((bytes_read = fread(buffer, 1, buffer_size, master_file)) > 0) {
-            for (int i = 0; i < num_directories; i++) {
+            for (int i = 0; i < num_filepaths; i++) {
                 fwrite(buffer, 1, bytes_read, files[i]);
             }
         }
         free(buffer);
         fclose(master_file);
-        for (int i = 0; i < num_directories; i++) {
+        for (int i = 0; i < num_filepaths; i++) {
             fclose(files[i]);
         }
         free(files);
     }
-    for (int i=0; i<num_directories; i++) {
+    for (int i=0; i<num_filepaths; i++) {
         VERBOSE_PRINT("Copied master file \"%s\" to file \"%s\"\n", master_path, filepaths[i]);
     }
 }

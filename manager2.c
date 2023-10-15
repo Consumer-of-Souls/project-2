@@ -32,15 +32,11 @@ bool read_directory(char *directory, char *base_dir, int base_dir_index, struct 
     VERBOSE_PRINT("Reading directory \"%s\"\n", directory);
     while ((entry = readdir(dir)) != NULL) {
         char *filename = entry->d_name;
-        char *filepath = malloc_data(strlen(directory) + strlen(filename) + 2);
-        sprintf(filepath, "%s/%s", directory, filename);
         if (strcmp(filename, ".") == 0 || strcmp(filename, "..") == 0) {
             continue;
         }
-        if (filename[0] == '.' && !flags->all_flag) {
-            VERBOSE_PRINT("Skipping hidden file \"%s\"\n", filepath);
-            continue;
-        }
+        char *filepath = malloc_data(strlen(directory) + strlen(filename) + 2);
+        sprintf(filepath, "%s/%s", directory, filename);
         if (stat(filepath, &file_info) == -1) {
             fprintf(stderr, "Error: could not get file info for file \"%s\"\n", filepath);
             exit(EXIT_FAILURE);
@@ -48,11 +44,12 @@ bool read_directory(char *directory, char *base_dir, int base_dir_index, struct 
         char *relpath = strdup(filepath + strlen(base_dir) + 1);
         if (S_ISDIR(file_info.st_mode)) {
             if (!flags->recursive_flag) {
-                VERBOSE_PRINT("Skipping directory \"%s\"\n", filepath);
+                VERBOSE_PRINT("Skipping directory \"%s\"\n", filename);
                 free(filepath);
+                free(relpath);
                 continue;
             }
-            VERBOSE_PRINT("Found directory \"%s\"\n", filepath);
+            VERBOSE_PRINT("Found directory \"%s\"\n", filename);
             bool result = read_directory(filepath, base_dir, base_dir_index, flags);
             if (result) {
                 found_files = true;
@@ -87,17 +84,25 @@ bool read_directory(char *directory, char *base_dir, int base_dir_index, struct 
                 current_dir_indexes->tail = new_index;
                 VERBOSE_PRINT("Added directory \"%s\"'s index to hashtable\n", relpath);
             }
-        } else {
+        } else if (S_ISREG(file_info.st_mode)) {
+            if (filename[0] == '.' && !flags->all_flag) {
+                VERBOSE_PRINT("Skipping hidden file \"%s\"\n", filename);
+                continue;
+            }
             if (flags->ignore1 != NULL && check_patterns(flags->ignore1, filename)) {
-                VERBOSE_PRINT("Skipping file \"%s\" as it matches an ignore pattern\n", filepath);
+                VERBOSE_PRINT("Skipping file \"%s\" as it matches an ignore pattern\n", filename);
+                free(filepath);
+                free(relpath);
                 continue;
             }
             // Ensure the entry satisfies the only patterns
             if (flags->only1 != NULL && !check_patterns(flags->only1, filename)) {
-                VERBOSE_PRINT("Skipping file \"%s\" as it does not match an only pattern\n", filepath);
+                VERBOSE_PRINT("Skipping file \"%s\" as it does not match an only pattern\n", filename);
+                free(filepath);
+                free(relpath);
                 continue;
             }
-            VERBOSE_PRINT("Found file \"%s\"\n", filepath);
+            VERBOSE_PRINT("Found file \"%s\"\n", filename);
             found_files = true;
             void *data = get(hashtable, relpath);
             if (data == NULL) {
