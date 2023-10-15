@@ -50,11 +50,12 @@ bool read_directory(char *directory, char *base_dir, int base_dir_index, struct 
                 continue;
             }
             VERBOSE_PRINT("Found directory \"%s\"\n", filename);
-            bool result = read_directory(filepath, base_dir, base_dir_index, flags);
-            if (result) {
-                found_files = true;
-            }
             void *data = get(hashtable, relpath);
+            if (data == NULL) {
+                add_relpath(&dir_head, &dir_tail, relpath);
+            }
+            bool result = read_directory(filepath, base_dir, base_dir_index, flags);
+            found_files |= result;
             if (data == NULL) {
                 struct dir_indexes *new_dir_indexes = malloc_data(sizeof(struct dir_indexes));
                 new_dir_indexes->type_id = 0;
@@ -65,7 +66,6 @@ bool read_directory(char *directory, char *base_dir, int base_dir_index, struct 
                 new_dir_indexes->head = new_index;
                 new_dir_indexes->tail = new_index;
                 put(&hashtable, relpath, new_dir_indexes);
-                add_relpath(&dir_head, &dir_tail, relpath);
                 VERBOSE_PRINT("Added directory \"%s\" to hashtable\n", relpath);
             } else {
                 int type = *(int *)data;
@@ -106,6 +106,7 @@ bool read_directory(char *directory, char *base_dir, int base_dir_index, struct 
             found_files = true;
             void *data = get(hashtable, relpath);
             if (data == NULL) {
+                add_relpath(&file_head, &file_tail, relpath);
                 struct file *new_file = malloc_data(sizeof(struct file));
                 new_file->type_id = 1;
                 new_file->directory_index = base_dir_index;
@@ -113,7 +114,6 @@ bool read_directory(char *directory, char *base_dir, int base_dir_index, struct 
                 new_file->permissions = file_info.st_mode;
                 new_file->edit_time = file_info.st_mtime;
                 put(&hashtable, relpath, new_file);
-                add_relpath(&file_head, &file_tail, relpath);
                 VERBOSE_PRINT("Added file \"%s\" to hashtable\n", relpath);
             } else {
                 int type = *(int *)data;
