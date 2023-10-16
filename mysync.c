@@ -8,7 +8,6 @@
 // 4. Return to step 2 until the directory array is empty (all files have been synced)
 
 int main(int argc, char **argv) {
-    umask(0); // Set the umask to 0 so that the permissions of files and directories created are not affected by the umask
     struct flags *flags = malloc_data(sizeof(struct flags));
     flags->all_flag = 0;
     flags->ignore1 = NULL;
@@ -58,10 +57,6 @@ int main(int argc, char **argv) {
     char **directories = malloc_data((num_directories) * sizeof(char *));
     for (int i = optind; i < argc; i++) {
         directories[i - optind] = strdup(argv[i]);
-    }
-    if (!check_directories(directories, num_directories, flags)) {
-        fprintf(stderr, "Error: invalid directories specified\n");
-        return 1;
     }
     sync_directories(directories, num_directories, flags);
     for (int i = 0; i < num_directories; i++) {

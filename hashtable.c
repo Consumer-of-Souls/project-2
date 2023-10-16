@@ -16,11 +16,11 @@ struct hashtable *create_hashtable(size_t size) {
     return hashtable;
 }
 
-int hash(char *key, int size) {
+unsigned int hash(char *key, int size) {
     // A function that takes a key and a size, and returns the hash of the key (tries to be as random as possible)
-    int hash = 0;
-    for (int i = 0; key[i] != '\0'; i++) {
-        hash += key[i] * (i + 1);
+    unsigned int hash = 5381;
+    for (int i = 0; i < strlen(key); i++) {
+        hash = ((hash << 5) + hash) + key[i];
     }
     return hash % size;
 }
@@ -61,7 +61,7 @@ void resize(struct hashtable **hashtable, size_t size) {
 
 void put(struct hashtable **hashtable, char *key, void *data) {
     // A function that takes a hashtable and a file node, and puts the file node into the hashtable
-    int index = hash(key, (*hashtable)->size);
+    unsigned int index = hash(key, (*hashtable)->size);
     // Check for collisions
     if ((*hashtable)->table[index] == NULL) {
         // If there are no collisions, put the data in the hashtable
@@ -103,7 +103,7 @@ void put(struct hashtable **hashtable, char *key, void *data) {
 
 void *get(struct hashtable *hashtable, char *key) {
     // A function that takes a hashtable and a key, and returns the node with the key
-    int index = hash(key, hashtable->size);
+    unsigned int index = hash(key, hashtable->size);
     // Check for collisions
     if (hashtable->table[index] == NULL) {
         // If there are no collisions, return NULL
@@ -127,7 +127,7 @@ void *get(struct hashtable *hashtable, char *key) {
 
 void delete(struct hashtable **hashtable, char *key) {
     // A function that takes a hashtable and a key, and deletes the node with the key
-    int index = hash(key, (*hashtable)->size);
+    unsigned int index = hash(key, (*hashtable)->size);
     // Check for collisions
     if ((*hashtable)->table[index] == NULL) {
         // If there are no collisions, return NULL

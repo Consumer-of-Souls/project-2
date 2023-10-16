@@ -11,6 +11,7 @@
 #include <regex.h>
 #include <utime.h>
 #include <stdbool.h>
+#include <fcntl.h>
 
 #ifndef _SC_PAGESIZE
 #define _SC_PAGESIZE 4096
@@ -105,8 +106,6 @@ void *malloc_data(size_t);
 void sync_directories(char **, int, struct flags *);
 
 void placeholder_dirs(struct dir_indexes *, char *, char **, int, struct flags *);
-
-bool check_directories(char **, int, struct flags *);
 
 void free_flags(struct flags *);
 

@@ -2,33 +2,31 @@
 
 void copy_files(char *master_path, long long int master_size, char **filepaths, int num_filepaths, struct flags *flags) {
     if (!flags->no_sync_flag) {
-        FILE *master_file = fopen(master_path, "rb");
-        if (master_file == NULL) {
-            fprintf(stderr, "Error: could not open file %s\n", master_path);
-            exit(EXIT_FAILURE);
+        int master_fd; // file descriptor for master file
+        master_fd = open(master_path, O_RDONLY); // open master file for reading
+        if (master_fd == -1) {
+            fprintf(stderr, "Error: could not open master file \"%s\"\n", master_path);
         }
-        FILE **files = malloc_data(num_filepaths * sizeof(FILE *));
+        int *files = malloc_data(num_filepaths * sizeof(int)); // array of file descriptors for other files
         for (int i = 0; i < num_filepaths; i++) {
-            chmod(filepaths[i], 0666); // Set the permissions of the file to 0666 so that we can write to it
-            files[i] = fopen(filepaths[i], "wb");
-            if (files[i] == NULL) {
-                fprintf(stderr, "Error: could not open file %s\n", filepaths[i]);
-                exit(EXIT_FAILURE);
+            files[i] = open(filepaths[i], O_RDWR | O_CREAT | O_TRUNC, 0666); // open or create file with 0666 permissions
+            if (files[i] == -1) {
+                fprintf(stderr, "Error: could not open file \"%s\"\n", filepaths[i]);
             }
         }
         int page_size = sysconf(_SC_PAGESIZE);
         size_t buffer_size = master_size < page_size * 16 ? master_size : page_size * 16;
         char *buffer = malloc_data(buffer_size);
-        size_t bytes_read;
-        while ((bytes_read = fread(buffer, 1, buffer_size, master_file)) > 0) {
+        ssize_t bytes_read;
+        while ((bytes_read = read(master_fd, buffer, buffer_size)) > 0) {
             for (int i = 0; i < num_filepaths; i++) {
-                fwrite(buffer, 1, bytes_read, files[i]);
+                write(files[i], buffer, bytes_read);
             }
         }
         free(buffer);
-        fclose(master_file);
+        close(master_fd);
         for (int i = 0; i < num_filepaths; i++) {
-            fclose(files[i]);
+            close(files[i]);
         }
         free(files);
     }
