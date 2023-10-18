@@ -11,6 +11,7 @@ struct hashtable *create_hashtable(size_t size) {
     if (hashtable->table == NULL) {
         // If calloc fails, print an error message and exit the program
         fprintf(stderr, "Error: could not allocate memory for hashtable\n");
+        free(hashtable);
         exit(EXIT_FAILURE);
     }
     return hashtable; // Return the hashtable

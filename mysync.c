@@ -56,10 +56,16 @@ int main(int argc, char **argv) {
             case '?':
                 // Print an error message and exit the program if an unknown option is passed
                 fprintf(stderr, "Unknown option -%c.\n", optopt);
+                free_patterns(flags->ignore1);
+                free_patterns(flags->only1);
+                free(flags);
                 return 1;
             default:
                 // Print an error message and abort the program if an unknown error occurs
                 fprintf(stderr, "Error: unknown error occurred\n");
+                free_patterns(flags->ignore1);
+                free_patterns(flags->only1);
+                free(flags);
                 abort();
         }
     }
@@ -67,6 +73,9 @@ int main(int argc, char **argv) {
     if (num_directories < 2) {
         // Print an error message and exit the program if there are not enough directories
         fprintf(stderr, "Error: not enough directories specified\n");
+        free_patterns(flags->ignore1);
+        free_patterns(flags->only1);
+        free(flags);
         return 1;
     }
     char **directories = malloc_data((num_directories) * sizeof(char *)); // Allocate memory for the array of directory names

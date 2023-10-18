@@ -48,6 +48,7 @@ bool read_directory(char *directory, char *base_dir, int base_dir_index, struct 
         if (stat(filepath, &file_info) == -1) {
             // If stat fails, print an error message and exit the program
             fprintf(stderr, "Error: could not get file info for file \"%s\"\n", filepath);
+            free(filepath);
             exit(EXIT_FAILURE);
         }
         char *relpath = strdup(filepath + strlen(base_dir) + 1); // Create the relative path by copying the filepath, and removing the base directory from the start
@@ -84,6 +85,8 @@ bool read_directory(char *directory, char *base_dir, int base_dir_index, struct 
                 if (type != 0) {
                     // If the type is not 0, the data is not a dir_indexes struct, so print an error message and exit the program
                     fprintf(stderr, "Error: key \"%s\" doesn't map to a directory\n", relpath);
+                    free(filepath);
+                    free(relpath);
                     exit(EXIT_FAILURE);
                 }
                 struct dir_indexes *current_dir_indexes = (struct dir_indexes *)data; // Cast the data to a dir_indexes struct
@@ -138,6 +141,8 @@ bool read_directory(char *directory, char *base_dir, int base_dir_index, struct 
                 if (type != 1) {
                     // If the type is not 1, the data is not a file struct, so print an error message and exit the program
                     fprintf(stderr, "Error: key \"%s\" doesn't map to a file\n", relpath);
+                    free(filepath);
+                    free(relpath);
                     exit(EXIT_FAILURE);
                 }
                 struct file *current_file = (struct file *)data; // Cast the data to a file struct

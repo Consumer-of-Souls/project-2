@@ -20,6 +20,7 @@ void copy_files(char *master_path, long long int master_size, char **filepaths, 
                 for (int j = 0; j < i; j++) {
                     close(files[j]);
                 }
+                free(files);
                 close(master_fd);
                 exit(EXIT_FAILURE);
             }

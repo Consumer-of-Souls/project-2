@@ -10,6 +10,7 @@ void create_directory(char *relpath, char *parent_dir, struct flags *flags) {
         if (result == -1) {
             // If mkdir fails, print an error message and exit the program
             fprintf(stderr, "Error: could not create directory %s\n", dirpath);
+            free(dirpath);
             exit(EXIT_FAILURE);
         }
     }
