@@ -1,68 +1,88 @@
 #include "mysync.h"
 
-// 1. A linked list is created for each directory, and contains the files in that directory. These linked lists are stored in an array
-// 2. The first file that can be (the first item of the linked list in the lowest array position) is chosen, and the file is checked against the linked lists later in the array to find files with the same name
-// 2.5 If the file type for this file is a directory, the placeholder directories are all created, and the function is then called recursively with the locations of each directory (step 3 is skipped)
-// 2.5 For the files with the same name, the newest version (the master file) and its directory index are stored
-// 3. The newest version of the file, the index of its directory, and the directories are passed to a function that overwrites (or creates) the file with the master file's name in each directory that is not the master directory so it contains the master file's contents
-// 4. Return to step 2 until the directory array is empty (all files have been synced)
+// 1. Scan each directory passed in the command line arguments
+// 2. For each file in each directory, add it to the hashtable if it is not already present, and if it is, check modification time and replace if necessary
+// 3. For each subdirectory in each directory, add it to the hashtable if it not already present, and then recurse into the subdirectory
+// 4. Use a valid bool for each directory to hold whether it is empty (invalid) or not (valid) and base this value on an OR of its bool with the result of the recursive call
+// 5. Set the result of the recursive call to true if files are found in the directory, or recursed subdirectories return true
+// 6. Loop through all directories in the hashtable and create them if they don't exist and their valid bool is true
+// 7. Loop through all files in the hashtable and sync their contents across all directories
+// 8. Celebrate!
 
 int main(int argc, char **argv) {
-    struct flags *flags = malloc_data(sizeof(struct flags));
-    flags->all_flag = 0;
+    struct flags *flags = malloc_data(sizeof(struct flags)); // Allocate memory for the flags struct
+    // Set all the flags to their default values
+    flags->all_flag = false;
     flags->ignore1 = NULL;
-    flags->no_sync_flag = 0;
+    flags->no_sync_flag = false;
     flags->only1 = NULL;
-    flags->copy_perm_time_flag = 0;
-    flags->recursive_flag = 0;
-    flags->verbose_flag = 0;
-    opterr = 0;
-    int opt;
+    flags->copy_perm_time_flag = false;
+    flags->recursive_flag = false;
+    flags->verbose_flag = false;
+    opterr = 0; // Stop getopt from printing error messages
+    int opt; // The current option
     while ((opt = getopt(argc, argv, "ai:no:prv")) != -1) {
+        // Loop through the options
         switch (opt) {
             case 'a':
-                flags->all_flag = 1;
+                // Set the all flag to true
+                flags->all_flag = true;
                 break;
             case 'i':
+                // Add the pattern to the ignore1 linked list
                 enqueue_pattern(&(flags->ignore1), optarg);
                 break;
             case 'n':
-                flags->no_sync_flag = 1;
-                flags->verbose_flag = 1;
+                // Set the no sync flag and the verbose flag to true
+                flags->no_sync_flag = true;
+                flags->verbose_flag = true;
                 break;
             case 'o':
+                // Add the pattern to the only1 linked list
                 enqueue_pattern(&(flags->only1), optarg);
                 break;
             case 'p':
-                flags->copy_perm_time_flag = 1;
+                // Set the copy permissions and modification time flag to true
+                flags->copy_perm_time_flag = true;
                 break;
             case 'r':
-                flags->recursive_flag = 1;
+                // Set the recursive flag to true
+                flags->recursive_flag = true;
                 break;
             case 'v':
-                flags->verbose_flag = 1;
+                // Set the verbose flag to true
+                flags->verbose_flag = true;
                 break;
             case '?':
+                // Print an error message and exit the program if an unknown option is passed
                 fprintf(stderr, "Unknown option -%c.\n", optopt);
                 return 1;
             default:
+                // Print an error message and abort the program if an unknown error occurs
+                fprintf(stderr, "Error: unknown error occurred\n");
                 abort();
         }
     }
-    int num_directories = argc - optind;
+    int num_directories = argc - optind; // Set the number of directories to the number of command line arguments minus the number of options
     if (num_directories < 2) {
+        // Print an error message and exit the program if there are not enough directories
         fprintf(stderr, "Error: not enough directories specified\n");
         return 1;
     }
-    char **directories = malloc_data((num_directories) * sizeof(char *));
+    char **directories = malloc_data((num_directories) * sizeof(char *)); // Allocate memory for the array of directory names
     for (int i = optind; i < argc; i++) {
+        // Loop through the command line arguments and add them to the array of directory names
         directories[i - optind] = strdup(argv[i]);
     }
-    sync_directories(directories, num_directories, flags);
+    sync_directories(directories, num_directories, flags); // Sync the directories
     for (int i = 0; i < num_directories; i++) {
+        // Loop through the array of directory names and free the memory allocated for each of them
         free(directories[i]);
     }
+    // Free the memory allocated for the array of directory names, the ignore1 linked list, the only1 linked list, and the flags struct
     free(directories);
-    free_flags(flags);
-    return 0;
+    free_patterns(flags->ignore1);
+    free_patterns(flags->only1);
+    free(flags);
+    return 0; // Exit the program
 }

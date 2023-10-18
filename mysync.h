@@ -14,12 +14,11 @@
 #include <fcntl.h>
 
 #ifndef _SC_PAGESIZE
+// If _SC_PAGESIZE is not defined, define it as 4096
 #define _SC_PAGESIZE 4096
 #endif
 
 #define DEFAULT_HASHTABLE_SIZE 100
-
-//  you may need other standard header files
 
 
 //  CITS2002 Project 2 2023
@@ -27,7 +26,7 @@
 //  Student2:   23970936   JACOB READ
 
 
-//  mysync (v1.0)
+//  mysync (v2.0)
 
 
 struct hashtable {
@@ -38,58 +37,69 @@ struct hashtable {
 };
 
 struct relpaths {
-    char *relpath;
-    struct relpaths *next;
+    // A struct that represents a linked list of relative paths
+    char *relpath; // The relative path
+    struct relpaths *next; // The next relative path
 };
 
 struct node {
-    char *name;
-    void *data;
-    struct node *next;
+    // A struct that represents a node in the hashtable
+    char *name; // The name of the node (the key)
+    void *data; // The data of the node (generic)
+    struct node *next; // The next node in the linked list
 };
 
 struct file {
-    int type_id;
-    int permissions;
-    long long int edit_time;
-    long long int size;
-    int directory_index;
+    // A struct that represents a file
+    int type_id; // An int used when casting to check whether the struct is a file or a dir_indexes type (should always be 1)
+    int permissions; // The permissions of the file
+    long long int edit_time; // The edit time of the file
+    long long int size; // The size of the file
+    int directory_index; // The index of the directory that the file is in
 };
 
 struct dir_indexes {
-    int type_id;
-    bool valid;
-    struct index *head;
-    struct index *tail; 
+    // A struct that represents a directory
+    int type_id; // An int used when casting to check whether the struct is a file or a dir_indexes type (should always be 0)
+    bool valid; // A bool that represents whether the directory is empty or not
+    struct index *head; // The head of the linked list of indexes
+    struct index *tail; // The tail of the linked list of indexes
 };
 
 struct index {
-    int index;
-    struct index *next;
+    // A struct that represents an index in a linked list
+    int index; // The index of the directory
+    struct index *next; // The next index in the linked list
 };
 
 struct pattern {
-    regex_t regex;
-    struct pattern *next;
+    // A struct that represents a pattern in a linked list
+    regex_t regex; // The regex of the pattern
+    struct pattern *next; // The next pattern in the linked list
 };
 
 struct flags {
-    int all_flag;
-    struct pattern *ignore1;
-    int no_sync_flag;
-    struct pattern *only1;
-    int copy_perm_time_flag;
-    int recursive_flag;
-    int verbose_flag;
+    // A struct that represents the flags passed in the command line arguments
+    bool all_flag; // A bool that represents whether the -a flag was passed
+    struct pattern *ignore1; // A linked list of patterns that represent the -i flag
+    bool no_sync_flag; // A bool that represents whether the -n flag was passed
+    struct pattern *only1; // A linked list of patterns that represent the -o flag
+    bool copy_perm_time_flag; // A bool that represents whether the -p flag was passed
+    bool recursive_flag; // A bool that represents whether the -r flag was passed
+    bool verbose_flag; // A bool that represents whether the -v flag was passed
 };
 
+// Macros
 
 #define VERBOSE_PRINT(fmt, ...) \
     do { \
         if (flags->verbose_flag) { \
             printf(fmt, ##__VA_ARGS__); \
         } \
-    } while (0)
+    } while (0) 
+
+
+// Function prototypes
 
 char *glob2regex(char *);
 
@@ -105,7 +115,7 @@ void *malloc_data(size_t);
 
 void sync_directories(char **, int, struct flags *);
 
-void placeholder_dirs(struct dir_indexes *, char *, char **, int, struct flags *);
+void create_directories(struct dir_indexes *, char *, char **, int, struct flags *);
 
 void free_flags(struct flags *);
 
@@ -118,5 +128,7 @@ void delete(struct hashtable **, char *);
 struct hashtable *create_hashtable(size_t);
 
 void print_all(struct hashtable *, struct relpaths *, char **);
+
+void free_patterns(struct pattern *);
 
 #endif
