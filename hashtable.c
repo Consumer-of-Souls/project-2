@@ -2,12 +2,12 @@
 
 // A C file that contains a powerful hashtable implementation that resizes itself when it gets too full
 
-struct hashtable *create_hashtable(size_t size) {
+Hashtable *create_hashtable(size_t size) {
     // A function that takes a size, and returns a hashtable with that size
-    struct hashtable *hashtable = malloc_data(sizeof(struct hashtable)); // Allocate memory for the hashtable
+    Hashtable *hashtable = malloc_data(sizeof(Hashtable)); // Allocate memory for the hashtable
     hashtable->size = size; // Set the size of the hashtable
     hashtable->num_elements = 0; // Initialize the number of elements in the hashtable to 0
-    hashtable->table = calloc(size, sizeof(struct node *)); // Allocate memory for the table of file nodes (uses calloc so all pointers are initialized to NULL)
+    hashtable->table = calloc(size, sizeof(Node *)); // Allocate memory for the table of file nodes (uses calloc so all pointers are initialized to NULL)
     if (hashtable->table == NULL) {
         // If calloc fails, print an error message and exit the program
         fprintf(stderr, "Error: could not allocate memory for hashtable\n");
@@ -32,10 +32,10 @@ void free_node_data(void *data) {
     int type = *(int *)data; // cast the data to an int to get the type
     if (type == 0) {
         // If the type is 0, the data is a dir_indexes struct and more needs to be done to free the memory
-        struct dir_indexes *dir_indexes = (struct dir_indexes *)data; // Cast the data to a dir_indexes struct
-        struct index *current_index = dir_indexes->head; // Loop through the indexes
+        Dir_indexes *dir_indexes = (Dir_indexes *)data; // Cast the data to a dir_indexes struct
+        Index *current_index = dir_indexes->head; // Loop through the indexes
         while (current_index != NULL) {
-            struct index *next_index = current_index->next; // Store the next index
+            Index *next_index = current_index->next; // Store the next index
             free(current_index); // Free the current index
             current_index = next_index; // Set the current index to the next index
         }
@@ -43,12 +43,12 @@ void free_node_data(void *data) {
     free(data); // Free the memory allocated for the data
 }
 
-void resize(struct hashtable **hashtable, size_t size) {
+void resize(Hashtable **hashtable, size_t size) {
     // A function that takes a hashtable, and resizes it to the given size
-    struct hashtable *new_hashtable = create_hashtable(size); // Create a new hashtable with the given size
+    Hashtable *new_hashtable = create_hashtable(size); // Create a new hashtable with the given size
     for (int i = 0; i < (*hashtable)->size; i++) {
         // Loop through the old hashtable
-        struct node *current_node = (*hashtable)->table[i]; // Get the current node
+        Node *current_node = (*hashtable)->table[i]; // Get the current node
         while (current_node != NULL) {
             // Loop through the linked list in the current node
             put(&new_hashtable, current_node->name, current_node->data); // Put the node into the new hashtable
@@ -63,20 +63,20 @@ void resize(struct hashtable **hashtable, size_t size) {
     *hashtable = new_hashtable;
 }
 
-void put(struct hashtable **hashtable, char *key, void *data) {
+void put(Hashtable **hashtable, char *key, void *data) {
     // A function that takes a hashtable, a key, and data, and puts the data into the hashtable with the key
     unsigned int index = hash(key, (*hashtable)->size); // Get the index of the key
     // Check for collisions
     if ((*hashtable)->table[index] == NULL) {
         // If there are no collisions, put the data in the hashtable
-        struct node *new_node = malloc_data(sizeof(struct node)); // Allocate memory for the new node
+        Node *new_node = malloc_data(sizeof(Node)); // Allocate memory for the new node
         new_node->name = strdup(key); // Copy the key into the new node
         new_node->data = data; // Set the data of the new node to the data
         new_node->next = NULL; // Set the next node to NULL
         (*hashtable)->table[index] = new_node; // Set the node in the hashtable to the new node
     } else {
         // If there is a collision, loop through the linked list until the end
-        struct node *current_node = (*hashtable)->table[index]; // Get the first node in the linked list
+        Node *current_node = (*hashtable)->table[index]; // Get the first node in the linked list
         while (current_node != NULL) {
             // Loop through the linked list
             if (strcmp(current_node->name, key) == 0) {
@@ -88,7 +88,7 @@ void put(struct hashtable **hashtable, char *key, void *data) {
             current_node = current_node->next; // Set the current node to the next node
         }
         // If the key doesn't exist, add the node to the beginning of the linked list
-        struct node *new_node = malloc_data(sizeof(struct node)); // Allocate memory for the new node
+        Node *new_node = malloc_data(sizeof(Node)); // Allocate memory for the new node
         new_node->name = strdup(key); // Copy the key into the new node
         new_node->data = data; // Set the data of the new node to the data
         new_node->next = (*hashtable)->table[index]; // Set the next node to the first node in the linked list
@@ -101,7 +101,7 @@ void put(struct hashtable **hashtable, char *key, void *data) {
     }
 }
 
-void *get(struct hashtable *hashtable, char *key) {
+void *get(Hashtable *hashtable, char *key) {
     // A function that takes a hashtable and a key, and returns the data with the key
     unsigned int index = hash(key, hashtable->size); // Get the index of the key
     // Check for collisions
@@ -110,7 +110,7 @@ void *get(struct hashtable *hashtable, char *key) {
         return NULL;
     }
     // If there is a collision, loop through the linked list until the end
-    struct node *current_node = hashtable->table[index]; // Get the first node in the linked list
+    Node *current_node = hashtable->table[index]; // Get the first node in the linked list
     while (current_node != NULL) {
         // Loop through the linked list
         if (strcmp(current_node->name, key) == 0) {
@@ -134,8 +134,8 @@ void delete(struct hashtable **hashtable, char *key) {
         return;
     }
     // If there is a collision, loop through the linked list until the end
-    struct node *current_node = (*hashtable)->table[index]; // Get the first node in the linked list
-    struct node *previous_node = NULL; // Initialize the previous node to NULL
+    Node *current_node = (*hashtable)->table[index]; // Get the first node in the linked list
+    Node *previous_node = NULL; // Initialize the previous node to NULL
     while (current_node != NULL) {
         // Loop through the linked list
         if (strcmp(current_node->name, key) == 0) {

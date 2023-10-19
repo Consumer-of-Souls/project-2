@@ -10,7 +10,7 @@
 // 8. Celebrate!
 
 int main(int argc, char **argv) {
-    struct flags *flags = malloc_data(sizeof(struct flags)); // Allocate memory for the flags struct
+    Flags *flags = malloc_data(sizeof(Flags)); // Allocate memory for the flags struct
     // Set all the flags to their default values
     flags->all_flag = false;
     flags->ignore1 = NULL;
@@ -80,7 +80,7 @@ int main(int argc, char **argv) {
     }
     char **directories = malloc_data((num_directories) * sizeof(char *)); // Allocate memory for the array of directory names
     for (int i = 0; i < num_directories; i++) {
-        // Loop through the command line arguments and add them to the array of directory names
+        // Loop through the command line arguments
         if (access(argv[i+optind], F_OK) == -1) {
             // Print an error message and exit the program if the directory does not exist
             fprintf(stderr, "Error: directory %s does not exist\n", argv[i+optind]);
@@ -88,6 +88,8 @@ int main(int argc, char **argv) {
                 // Loop through the array of directory names and free the memory allocated for each of them
                 free(directories[j]);
             }
+            // Free the memory allocated for the array of directory names, the ignore1 linked list, the only1 linked list, and the flags struct
+            free(directories);
             free_patterns(flags->ignore1);
             free_patterns(flags->only1);
             free(flags);

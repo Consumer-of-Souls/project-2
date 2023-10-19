@@ -1,16 +1,16 @@
 #include "mysync.h"
 
-struct hashtable *hashtable = NULL; // A hashtable that maps relative paths to either a struct file or a struct dir_indexes
+Hashtable *hashtable = NULL; // A hashtable that maps relative paths to either a File or a Dir_indexes
 
-struct relpaths *file_head = NULL; // A linked list of relative paths to files (for easy retrieval from the hashtable), the files are added in the order they are found, ensuring they are synced in the correct order (not as necessary as directories, but still useful)
-struct relpaths *file_tail = NULL;
+Relpaths *file_head = NULL; // A linked list of relative paths to files (for easy retrieval from the hashtable), the files are added in the order they are found, ensuring they are synced in the correct order (not as necessary as directories, but still useful)
+Relpaths *file_tail = NULL;
 
-struct relpaths *dir_head = NULL; // A linked list of relative paths to directories (for easy retrieval from the hashtable), the directories are added in the order they are found, ensuring they are created in the correct order
-struct relpaths *dir_tail = NULL;
+Relpaths *dir_head = NULL; // A linked list of relative paths to directories (for easy retrieval from the hashtable), the directories are added in the order they are found, ensuring they are created in the correct order
+Relpaths *dir_tail = NULL;
 
-void add_relpath(struct relpaths **head, struct relpaths **tail, char *relpath) {
+void add_relpath(Relpaths **head, Relpaths **tail, char *relpath) {
     // A function that takes a head and tail pointer to a linked list of relative paths, and a relative path, and adds the relative path to the end of the linked list
-    struct relpaths *new_relpath = malloc_data(sizeof(struct relpaths)); // Allocate memory for the new relative path
+    Relpaths *new_relpath = malloc_data(sizeof(Relpaths)); // Allocate memory for the new relative path
     new_relpath->relpath = strdup(relpath); // Copy the relative path into the new relative path
     new_relpath->next = NULL; // Set the next relative path to NULL
     if (*head == NULL) {
@@ -24,7 +24,7 @@ void add_relpath(struct relpaths **head, struct relpaths **tail, char *relpath) 
     }
 }
 
-bool read_directory(char *directory, char *base_dir, int base_dir_index, struct flags *flags) {
+bool read_directory(char *directory, char *base_dir, int base_dir_index, Flags *flags) {
     // A function that takes a directory, a base directory, a base directory index, and a flags struct, and reads the directory, adding the files and directories to the hashtable
     bool found_files = false; // A bool that represents whether any files were found in the directory (initialised to false)
     DIR *dir = opendir(directory); // Open the directory
@@ -70,10 +70,10 @@ bool read_directory(char *directory, char *base_dir, int base_dir_index, struct 
             found_files |= result; // Set the found_files variable to true if any files were found in the subdirectory (making the current directory not empty)
             if (data == NULL) {
                 // If the directory is not already in the hashtable, add it to the hashtable
-                struct dir_indexes *new_dir_indexes = malloc_data(sizeof(struct dir_indexes)); // Allocate memory for the new dir_indexes struct
+                Dir_indexes *new_dir_indexes = malloc_data(sizeof(Dir_indexes)); // Allocate memory for the new dir_indexes struct
                 new_dir_indexes->type_id = 0; // Set the type_id to 0 (so it can be checked when casting)
                 new_dir_indexes->valid = result; // Set the valid bool to the result of the recursive call
-                struct index *new_index = malloc_data(sizeof(struct index)); // Allocate memory for the new index
+                Index *new_index = malloc_data(sizeof(Index)); // Allocate memory for the new index
                 new_index->index = base_dir_index; // Set the index to the base directory index
                 new_index->next = NULL; // Set the next index to NULL
                 new_dir_indexes->head = new_index; // Set the head of the linked list of indexes to the new index
@@ -89,9 +89,9 @@ bool read_directory(char *directory, char *base_dir, int base_dir_index, struct 
                     free(relpath);
                     exit(EXIT_FAILURE);
                 }
-                struct dir_indexes *current_dir_indexes = (struct dir_indexes *)data; // Cast the data to a dir_indexes struct
+                Dir_indexes *current_dir_indexes = (Dir_indexes *)data; // Cast the data to a dir_indexes struct
                 current_dir_indexes->valid |= result; // If the result of the recursive call is true, set the valid bool to true
-                struct index *new_index = malloc_data(sizeof(struct index)); // Allocate memory for the new index
+                Index *new_index = malloc_data(sizeof(Index)); // Allocate memory for the new index
                 new_index->index = base_dir_index; // Set the index to the base directory index
                 new_index->next = NULL; // Set the next index to NULL
                 current_dir_indexes->tail->next = new_index; // Set the next index of the tail of the linked list of indexes to the new index
@@ -127,7 +127,7 @@ bool read_directory(char *directory, char *base_dir, int base_dir_index, struct 
             if (data == NULL) {
                 // If the file is not already in the hashtable, add it to the hashtable
                 add_relpath(&file_head, &file_tail, relpath); // Immediately add the file to the linked list of files (to ensure that the files are synced in the correct order, although this is not as necessary as directories) if it is not already in the hashtable
-                struct file *new_file = malloc_data(sizeof(struct file)); // Allocate memory for the new file
+                File *new_file = malloc_data(sizeof(File)); // Allocate memory for the new file
                 new_file->type_id = 1; // Set the type_id to 1 (so it can be checked when casting)
                 new_file->directory_index = base_dir_index; // Set the directory index to the base directory index
                 new_file->size = file_info.st_size; // Set the size to the size of the file
@@ -145,7 +145,7 @@ bool read_directory(char *directory, char *base_dir, int base_dir_index, struct 
                     free(relpath);
                     exit(EXIT_FAILURE);
                 }
-                struct file *current_file = (struct file *)data; // Cast the data to a file struct
+                File *current_file = (File *)data; // Cast the data to a file struct
                 if (file_info.st_mtime > current_file->edit_time) {
                     // If the modification time of the file is greater than the modification time of the file in the hashtable, update the file in the hashtable
                     current_file->size = file_info.st_size; // Update the size of the file
@@ -167,7 +167,7 @@ bool read_directory(char *directory, char *base_dir, int base_dir_index, struct 
     return found_files;
 }
 
-void sync_directories(char **directories, int num_directories, struct flags *flags) {
+void sync_directories(char **directories, int num_directories, Flags *flags) {
     // A function that takes an array of directory names, the number of directories, and a flags struct, and syncs the directories
     hashtable = create_hashtable(DEFAULT_HASHTABLE_SIZE); // Create the hashtable
     for (int i=0; i<num_directories; i++) {
@@ -182,11 +182,11 @@ void sync_directories(char **directories, int num_directories, struct flags *fla
         print_all(hashtable, file_head, directories);
     }
     // Loop through the directory linked list
-    struct relpaths *current_dir = dir_head; // Set the current directory to the head of the linked list
-    struct relpaths *temp = NULL; // A temporary variable to store the next directory
+    Relpaths *current_dir = dir_head; // Set the current directory to the head of the linked list
+    Relpaths *temp = NULL; // A temporary variable to store the next directory
     while (current_dir != NULL) {
         // Loop through the directory linked list
-        struct dir_indexes *current_dir_indexes = (struct dir_indexes *)get(hashtable, current_dir->relpath); // Get the directory indexes from the hashtable and cast them to a dir_indexes struct
+        Dir_indexes *current_dir_indexes = (Dir_indexes *)get(hashtable, current_dir->relpath); // Get the directory indexes from the hashtable and cast them to a dir_indexes struct
         if (current_dir_indexes->valid) {
             // If the directory is not empty, create the directories in the locations they don't exist (aren't in the directory indexes)
             create_directories(current_dir_indexes, current_dir->relpath, directories, num_directories, flags);
@@ -198,10 +198,10 @@ void sync_directories(char **directories, int num_directories, struct flags *fla
         current_dir = temp; // Set the current directory to the next directory
     }
     // Loop through the file linked list
-    struct relpaths *current_file = file_head; // Set the current file to the head of the linked list
+    Relpaths *current_file = file_head; // Set the current file to the head of the linked list
     while (current_file != NULL) {
         // Loop through the file linked list
-        struct file *current_file_info = (struct file *)get(hashtable, current_file->relpath); // Get the file from the hashtable and cast it to a file struct
+        File *current_file_info = (File *)get(hashtable, current_file->relpath); // Get the file from the hashtable and cast it to a file struct
         VERBOSE_PRINT("Syncing file \"%s\"\n", current_file->relpath);
         sync_master(current_file_info, current_file->relpath, directories, num_directories, flags); // Sync the file
         delete(&hashtable, current_file->relpath); // Delete the file from the hashtable

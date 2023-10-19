@@ -1,9 +1,9 @@
 #include "mysync.h"
 
-void free_patterns(struct pattern *pattern) {
+void free_patterns(Pattern *pattern) {
     // A function that takes a linked list of patterns and frees all the memory allocated for it
-    struct pattern *current_pattern = pattern; // Set the current pattern to the head of the linked list
-    struct pattern *temp = NULL; // Initialize a temporary pattern for storing the next pattern
+    Pattern *current_pattern = pattern; // Set the current pattern to the head of the linked list
+    Pattern *temp = NULL; // Initialize a temporary pattern for storing the next pattern
     while (current_pattern != NULL) {
         // Loop through the linked list
         temp = current_pattern->next; // Set the temporary pattern to the next pattern
@@ -13,7 +13,7 @@ void free_patterns(struct pattern *pattern) {
     }
 }
 
-void enqueue_pattern(struct pattern **head, char *glob) {
+void enqueue_pattern(Pattern **head, char *glob) {
     // A function that takes a linked list of patterns and a glob, and adds the glob to the linked list as a regex
     char *regex = glob2regex(glob); // Convert the glob to a regex
     if (regex == NULL) {
@@ -21,7 +21,7 @@ void enqueue_pattern(struct pattern **head, char *glob) {
         fprintf(stderr, "Error: could not convert glob %s to regex\n", glob);
         exit(EXIT_FAILURE);
     }
-    struct pattern *new_pattern = malloc_data(sizeof(struct pattern)); // Allocate memory for the new pattern
+    Pattern *new_pattern = malloc_data(sizeof(Pattern)); // Allocate memory for the new pattern
     int err = regcomp(&(new_pattern->regex), regex, REG_EXTENDED | REG_NOSUB); // Compile the regex and add it to the new pattern
     if (err != 0) {
         // If the regex could not be compiled, print an error message and exit the program
@@ -34,9 +34,9 @@ void enqueue_pattern(struct pattern **head, char *glob) {
     *head = new_pattern; // Set the head of the linked list to the new pattern
 }
 
-bool check_patterns(struct pattern *head, char *filename) {
+bool check_patterns(Pattern *head, char *filename) {
     // A function that takes a linked list of patterns and a filename, and returns true if the filename matches any of the patterns, and false otherwise
-    struct pattern *current_pattern = head; // Set the current pattern to the head of the linked list
+    Pattern *current_pattern = head; // Set the current pattern to the head of the linked list
     while (current_pattern != NULL) {
         // Loop through the linked list
         int err = regexec(&(current_pattern->regex), filename, 0, NULL, 0); // Execute the regex

@@ -1,6 +1,6 @@
 #include "mysync.h"
 
-void copy_files(char *master_path, long long int master_size, char **filepaths, int num_filepaths, struct flags *flags) {
+void copy_files(char *master_path, long long int master_size, char **filepaths, int num_filepaths, Flags *flags) {
     // A function that takes a master file and an array of filepaths and copies the master file to each of the filepaths
     if (!flags->no_sync_flag) {
         // If the -n flag was not passed, copy the master file to each of the filepaths
@@ -50,7 +50,7 @@ void copy_files(char *master_path, long long int master_size, char **filepaths, 
     }
 }
 
-void sync_master(struct file *master, char *relpath, char **directories, int num_directories, struct flags *flags) {
+void sync_master(File *master, char *relpath, char **directories, int num_directories, Flags *flags) {
     // A function that takes a master file, a relative path to the file, an array of directory names, the number of directories, and a flags struct, and copies the master file to each of the directories
     char *master_path = malloc_data(strlen(directories[master->directory_index]) + strlen(relpath) + 2); // Allocate memory for the master file path
     sprintf(master_path, "%s/%s", directories[master->directory_index], relpath); // Create the master file path by concatenating the directory name and the relative path
