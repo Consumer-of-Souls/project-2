@@ -125,7 +125,7 @@ void *get(Hashtable *hashtable, char *key) {
 
 
 
-void delete(struct hashtable **hashtable, char *key) {
+void delete(Hashtable **hashtable, char *key) {
     // A function that takes a hashtable and a key, and deletes the node with the key
     unsigned int index = hash(key, (*hashtable)->size); // Get the index of the key
     // Check for collisions
