@@ -2,7 +2,7 @@
 
 char *permissions(int permissions) {
     // A function that takes a file's permissions and returns a string representation of them in the form "-rwxrwxrwx"
-    char *mode_string = malloc_data(10);
+    char *mode_string = malloc_data(10); // Allocate memory for the mode string
     int mask = 256; // The highest bit of the permissions
     for (int i = 0; i < 9; i++) {
         // Check each bit of the permissions and assign the corresponding character to the mode string
