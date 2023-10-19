@@ -79,9 +79,21 @@ int main(int argc, char **argv) {
         return 1;
     }
     char **directories = malloc_data((num_directories) * sizeof(char *)); // Allocate memory for the array of directory names
-    for (int i = optind; i < argc; i++) {
+    for (int i = 0; i < num_directories; i++) {
         // Loop through the command line arguments and add them to the array of directory names
-        directories[i - optind] = strdup(argv[i]);
+        if (access(argv[i+optind], F_OK) == -1) {
+            // Print an error message and exit the program if the directory does not exist
+            fprintf(stderr, "Error: directory %s does not exist\n", argv[i+optind]);
+            for (int j = 0; j < i; j++) {
+                // Loop through the array of directory names and free the memory allocated for each of them
+                free(directories[j]);
+            }
+            free_patterns(flags->ignore1);
+            free_patterns(flags->only1);
+            free(flags);
+            return 1;
+        }
+        directories[i] = strdup(argv[i+optind]); // Add the directory name to the array of directory names
     }
     sync_directories(directories, num_directories, flags); // Sync the directories
     for (int i = 0; i < num_directories; i++) {
