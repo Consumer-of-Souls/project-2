@@ -15,6 +15,11 @@ void free_patterns(Pattern *pattern) {
 
 void enqueue_pattern(Pattern **head, char *glob) {
     // A function that takes a linked list of patterns and a glob, and adds the glob to the linked list as a regex
+    if (strchr(glob, '/') != NULL) {
+        // If the glob contains a slash, print an error message and exit the program
+        fprintf(stderr, "Error: glob \"%s\" contains a forward slash which is not allowed\n", glob);
+        exit(EXIT_FAILURE);
+    }
     char *regex = glob2regex(glob); // Convert the glob to a regex
     if (regex == NULL) {
         // If the glob could not be converted to a regex, print an error message and exit the program
