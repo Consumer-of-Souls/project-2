@@ -49,12 +49,14 @@ void resize(Hashtable **hashtable, size_t size) {
     for (int i = 0; i < (*hashtable)->size; i++) {
         // Loop through the old hashtable
         Node *current_node = (*hashtable)->table[i]; // Get the current node
+        Node *temp = NULL; // Initialize a temporary node to NULL
         while (current_node != NULL) {
             // Loop through the linked list in the current node
             put(&new_hashtable, current_node->name, current_node->data); // Put the node into the new hashtable
             free(current_node->name); // Free the memory allocated for the old node's name
-            free(current_node); // Free the memory allocated for the old node
+            temp = current_node; // Set the temporary node to the current node
             current_node = current_node->next; // Set the current node to the next node
+            free(temp); // Free the memory allocated for the old node
         }
     }
     // Free the memory allocated for the old hashtable and set the old hashtable to the new hashtable
